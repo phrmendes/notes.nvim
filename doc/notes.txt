@@ -1,0 +1,89 @@
+==============================================================================
+------------------------------------------------------------------------------
+                                                                         *notes*
+                                    `notes`
+A simple note taking plugin for neovim.
+
+MIT License Copyright (c) 2024 Pedro Mendes
+
+# Setup ~
+
+local add = require("mini.deps").add
+
+>lua
+add({
+	source = "phrmendes/notes.nvim",
+	depends = { "echasnovski/mini.nvim" },
+	-- depends = { "echasnovski/mini.pick" },
+})
+<
+
+# Configuration ~
+
+You can configure the plugin by calling the `setup` function. The default path
+for notes is `~/Documents/notes`.
+
+>lua
+local later = require("mini.deps")
+
+later(function()
+  require("notes").setup({ path = "path/to/your/notes" })
+end)
+<
+==============================================================================
+@module 'notes'
+
+------------------------------------------------------------------------------
+                                                            *normalize_string()*
+                           `normalize_string`({word})
+Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
+and replacing spaces and non-word characters with underscores.
+@param word string: The word to normalize.
+@return string: The normalized word.
+
+------------------------------------------------------------------------------
+                                                                 *create_tags()*
+                          `create_tags`({str}, {sep})
+Creates an array of tags from a string.
+@param str string: The string to split.
+@param sep string: The separator to use for splitting the string.
+@return string: A string with tags separated by commas.
+
+------------------------------------------------------------------------------
+                                                       *generate_random_array()*
+                      `generate_random_array`({n}, {char})
+Generates an array of random characters or numbers.
+@param n number: The length of the array.
+@param char? boolean: If true, generates random uppercase letters; otherwise, generates random numbers.
+@return (integer | string)[]: An array of random characters or numbers.
+
+------------------------------------------------------------------------------
+                                                                *notes.search()*
+                             `notes.search`({path})
+Search for notes
+@param path string: Path to search in
+@return nil
+
+------------------------------------------------------------------------------
+                                                             *notes.grep_live()*
+                           `notes.grep_live`({path})
+Live grep in notes
+@param path string: Path to grep in
+@return nil
+
+------------------------------------------------------------------------------
+                                                                   *notes.new()*
+                              `notes.new`({path})
+Create a new note
+@param path string: Path to create the note in
+@return nil
+
+------------------------------------------------------------------------------
+                                                                 *notes.setup()*
+                             `notes.setup`({opts})
+Setup notes plugin
+@param opts table: Options for setup
+@return nil
+
+
+ vim:tw=78:ts=8:noet:ft=help:norl:

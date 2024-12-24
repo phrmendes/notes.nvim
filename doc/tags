@@ -1,0 +1,8 @@
+create_tags()	notes.txt	/*create_tags()*
+generate_random_array()	notes.txt	/*generate_random_array()*
+normalize_string()	notes.txt	/*normalize_string()*
+notes	notes.txt	/*notes*
+notes.grep_live()	notes.txt	/*notes.grep_live()*
+notes.new()	notes.txt	/*notes.new()*
+notes.search()	notes.txt	/*notes.search()*
+notes.setup()	notes.txt	/*notes.setup()*
