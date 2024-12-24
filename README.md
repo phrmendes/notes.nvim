@@ -1,6 +1,6 @@
 # notes.nvim
 
-A simple note taking plugin for neovim. It is inspired by [denote](https://github.com/protesilaos/denote). This plugin was thinking to be used along with [mini.pick](https://github.com/echasnovski/mini.pick) and [marksman](https://github.com/artempyanykh/marksman).
+A simple note taking plugin for neovim. It is inspired by [denote](https://github.com/protesilaos/denote). This plugin is designed to be used with [mini.pick](https://github.com/echasnovski/mini.pick) and [marksman](https://github.com/artempyanykh/marksman).
 
 ## Features
 
