@@ -1,3 +1,4 @@
+---
 --- A simple note taking plugin for neovim.
 ---
 --- MIT License Copyright (c) 2024 Pedro Mendes
@@ -90,7 +91,7 @@ local generate_random_array = function(n, char)
 	return array
 end
 
---- Search for notes
+--- Search for notes (in markdown files)
 --- @param path string: Path to search in
 --- @return nil
 notes.search = function(path)
@@ -109,7 +110,7 @@ notes.search = function(path)
 	})
 end
 
---- Live grep in notes
+--- Live grep in notes (in markdown files)
 --- @param path string: Path to grep in
 --- @return nil
 notes.grep_live = function(path)
@@ -154,7 +155,7 @@ notes.new = function(path)
 
 	local content = { "# " .. title, "" }
 
-	if tags ~= "" then
+	if tags ~= "" or tags ~= nil then
 		content = vim.list_extend(content, { "**Tags:** " .. tags, "" })
 	end
 

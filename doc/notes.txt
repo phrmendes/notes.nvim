@@ -2,6 +2,7 @@
 ------------------------------------------------------------------------------
                                                                          *notes*
                                     `notes`
+
 A simple note taking plugin for neovim.
 
 MIT License Copyright (c) 2024 Pedro Mendes
@@ -60,14 +61,14 @@ Generates an array of random characters or numbers.
 ------------------------------------------------------------------------------
                                                                 *notes.search()*
                              `notes.search`({path})
-Search for notes
+Search for notes (in markdown files)
 @param path string: Path to search in
 @return nil
 
 ------------------------------------------------------------------------------
                                                              *notes.grep_live()*
                            `notes.grep_live`({path})
-Live grep in notes
+Live grep in notes (in markdown files)
 @param path string: Path to grep in
 @return nil
 

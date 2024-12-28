@@ -39,7 +39,3 @@ end)
 ## Usage
 
 Check the [help file](./doc/notes.txt) for more information.
-
-## Backlog
-
-- [ ] Add tests.
