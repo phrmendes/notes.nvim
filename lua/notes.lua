@@ -33,6 +33,9 @@ local notes = {}
 local config = {}
 local pick = require("mini.pick")
 
+--- @class Setup
+--- @field path string: Path to the notes directory
+
 --- Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
 --- and replacing spaces and non-word characters with underscores.
 --- @param word string: The word to normalize.
@@ -162,9 +165,8 @@ notes.new = function(path)
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
 end
 
---- Setup notes plugin
---- @param opts table: Options for setup
---- @return nil
+--- Setup function
+--- @param opts Setup
 notes.setup = function(opts)
 	opts = opts or {}
 	config.path = opts.path or vim.env.HOME .. "/Documents/notes"
