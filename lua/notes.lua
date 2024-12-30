@@ -31,7 +31,6 @@
 --- @module 'notes'
 local notes = {}
 local config = {}
-local pick = require("mini.pick")
 
 --- @class Setup
 --- @field path string: Path to the notes directory
@@ -100,7 +99,7 @@ end
 notes.search = function(path)
 	path = path or config.path
 
-	pick.builtin.cli({
+	require("mini.pick").builtin.cli({
 		command = { "fd", "-t", "f", "-e", "md" },
 	}, {
 		source = {
@@ -119,14 +118,14 @@ end
 notes.grep_live = function(path)
 	path = path or config.path
 
-	pick.builtin.grep_live({
+	require("mini.pick").builtin.grep_live({
 		globs = { "*.md" },
 	}, {
 		source = {
 			name = "Search in notes",
 			cwd = path,
 			show = function(buf_id, items, query)
-				pick.default_show(buf_id, items, query, { show_icons = true })
+				require("mini.pick").default_show(buf_id, items, query, { show_icons = true })
 			end,
 		},
 	})
