@@ -62,6 +62,9 @@ local function create_tags(str, sep)
 	local tags = {}
 
 	for i in string.gmatch(str, "([^" .. sep .. "]+)") do
+		-- remove leading and trailing whitespaces
+		i = i:gsub("^%s*(.-)%s*$", "%1")
+
 		table.insert(tags, "#" .. i)
 	end
 
