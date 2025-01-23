@@ -35,6 +35,10 @@ local config = {}
 --- @class Setup
 --- @field path string: Path to the notes directory
 
+--- @class FileContent
+--- @field path string: The path to the file.
+--- @field content string[]: The content to add to the file.
+
 --- Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
 --- and replacing spaces and non-word characters with underscores.
 --- @param word string: The word to normalize.
@@ -96,6 +100,16 @@ local generate_random_array = function(n, char)
 	return array
 end
 
+--- Adds content to a file.
+--- @param opts FileContent: Options for adding content to a file.
+local function add_content_to_file(opts)
+	vim.cmd("vnew " .. opts.path)
+
+	local buf = vim.api.nvim_get_current_buf()
+
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, opts.content)
+end
+
 --- Search for notes (in markdown files)
 --- @param path string: Path to search in
 --- @return nil
@@ -140,31 +154,28 @@ end
 notes.new = function(path)
 	path = path or config.path
 
-	local title = vim.fn.input("Title: ")
+	vim.ui.input({ prompt = "Title: " }, function(title)
+		if title == "" or title == nil then
+			vim.notify("Note not created: title can't be empty", vim.log.levels.ERROR)
+			return
+		end
 
-	if title == "" then
-		vim.notify("Note not created: title can't be empty", vim.log.levels.ERROR)
-		return
-	end
+		local id = table.concat(generate_random_array(4, true))
+		local date = os.date("%Y%m%d")
 
-	local tags = create_tags(vim.fn.input("Tags (separated by comma): "), ",")
-	local normalized_title = normalize_string(title)
-	local id = table.concat(generate_random_array(4, true))
-	local date = os.date("%Y%m%d")
+		local opts = {
+			content = { "# " .. title, "" },
+			path = path .. "/" .. date .. id .. "-" .. normalize_string(title) .. ".md",
+		}
 
-	local file_path = path .. "/" .. date .. id .. "-" .. normalized_title .. ".md"
+		vim.ui.input({ prompt = "Tags (separated by comma): " }, function(tags)
+			if tags ~= "" and tags ~= nil then
+				opts.content = vim.list_extend(opts.content, { "**Tags:** " .. create_tags(tags, ","), "" })
+			end
 
-	vim.cmd("vnew " .. file_path)
-
-	local buf = vim.api.nvim_get_current_buf()
-
-	local content = { "# " .. title, "" }
-
-	if tags ~= "" or tags ~= nil then
-		content = vim.list_extend(content, { "**Tags:** " .. tags, "" })
-	end
-
-	vim.api.nvim_buf_set_lines(buf, 0, -1, false, content)
+			add_content_to_file(opts)
+		end)
+	end)
 end
 
 --- Setup function

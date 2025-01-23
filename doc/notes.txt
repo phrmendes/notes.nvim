@@ -39,6 +39,11 @@ end)
 @field path string: Path to the notes directory
 
 ------------------------------------------------------------------------------
+@class FileContent
+@field path string: The path to the file.
+@field content string[]: The content to add to the file.
+
+------------------------------------------------------------------------------
                                                             *normalize_string()*
                            `normalize_string`({word})
 Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
@@ -61,6 +66,12 @@ Generates an array of random characters or numbers.
 @param n number: The length of the array.
 @param char? boolean: If true, generates random uppercase letters; otherwise, generates random numbers.
 @return (integer | string)[]: An array of random characters or numbers.
+
+------------------------------------------------------------------------------
+                                                         *add_content_to_file()*
+                         `add_content_to_file`({opts})
+Adds content to a file.
+@param opts FileContent: Options for adding content to a file.
 
 ------------------------------------------------------------------------------
                                                                 *notes.search()*
