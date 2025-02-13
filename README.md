@@ -28,8 +28,33 @@ add({
 
 You can configure the plugin by calling the `setup` function. The default path for notes is `~/Documents/notes`.
 
+### lazy.nvim
+
+```lua
+return {
+	"phrmendes/notes.nvim",
+	dependencies = { "echasnovski/mini.nvim" },
+	opts = {
+		path = vim.env.HOME .. "/Documents/notes",
+	},
+	keys = {
+		{ "<leader>ns", function() require("notes").search() end, desc = "Search" },
+		{ "<leader>n/", function() require("notes").grep_live() end, desc = "Live grep" },
+		{ "<leader>nn", function() require("notes").new() end, desc = "New" },
+	},
+}
+```
+
+### mini.deps
+
 ```lua
 local later = require("mini.deps")
+local add = require("mini.add")
+
+add({
+    source = "phrmendes/notes.nvim"
+	depends = { "echasnovski/mini.nvim" },
+})
 
 later(function()
   require("notes").setup({ path = "path/to/your/notes" })
