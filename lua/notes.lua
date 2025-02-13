@@ -111,7 +111,7 @@ local function add_content_to_file(opts)
 end
 
 --- Search for notes (in markdown files)
---- @param path string: Path to search in
+--- @param path string | nil: Path to search in
 --- @return nil
 notes.search = function(path)
 	path = path or config.path
@@ -130,7 +130,7 @@ notes.search = function(path)
 end
 
 --- Live grep in notes (in markdown files)
---- @param path string: Path to grep in
+--- @param path string | nil: Path to grep in
 --- @return nil
 notes.grep_live = function(path)
 	path = path or config.path
@@ -149,7 +149,7 @@ notes.grep_live = function(path)
 end
 
 --- Create a new note
---- @param path string: Path to create the note in
+--- @param path string | nil: Path to create the note in
 --- @return nil
 notes.new = function(path)
 	path = path or config.path
