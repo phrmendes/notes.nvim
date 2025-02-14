@@ -5,28 +5,21 @@
 ---
 --- # Setup ~
 ---
---- local add = require("mini.deps").add
----
 --- >lua
---- add({
---- 	source = "phrmendes/notes.nvim",
---- 	depends = { "echasnovski/mini.nvim" },
---- 	-- depends = { "echasnovski/mini.pick" },
---- })
+--- return {
+--- 	"phrmendes/notes.nvim",
+--- 	dependencies = { "folke/snacks.nvim" },
+--- 	opts = {
+--- 		path = vim.env.HOME .. "/Documents/notes",
+--- 	},
+--- 	keys = {
+--- 		{ "<leader>ns", function() require("notes").search() end, desc = "Search" },
+--- 		{ "<leader>n/", function() require("notes").grep_live() end, desc = "Live grep" },
+--- 		{ "<leader>nn", function() require("notes").new() end, desc = "New" },
+--- 	},
+--- }
 --- <
 ---
---- # Configuration ~
----
---- You can configure the plugin by calling the `setup` function. The default path
---- for notes is `~/Documents/notes`.
----
---- >lua
---- local later = require("mini.deps")
----
---- later(function()
----   require("notes").setup({ path = "path/to/your/notes" })
---- end)
---- <
 --- ==============================================================================
 --- @module 'notes'
 local notes = {}
@@ -116,17 +109,7 @@ end
 notes.search = function(path)
 	path = path or config.path
 
-	require("mini.pick").builtin.cli({
-		command = { "fd", "-t", "f", "-e", "md" },
-	}, {
-		source = {
-			name = "Notes",
-			cwd = path,
-			show = function(buf_id, items, query)
-				require("mini.pick").default_show(buf_id, items, query, { show_icons = true })
-			end,
-		},
-	})
+	require("snacks").picker.files({ dirs = { path }, ft = "md" })
 end
 
 --- Live grep in notes (in markdown files)
@@ -135,17 +118,7 @@ end
 notes.grep_live = function(path)
 	path = path or config.path
 
-	require("mini.pick").builtin.grep_live({
-		globs = { "*.md" },
-	}, {
-		source = {
-			name = "Search in notes",
-			cwd = path,
-			show = function(buf_id, items, query)
-				require("mini.pick").default_show(buf_id, items, query, { show_icons = true })
-			end,
-		},
-	})
+	require("snacks").picker.grep({ dirs = { path }, ft = "md" })
 end
 
 --- Create a new note

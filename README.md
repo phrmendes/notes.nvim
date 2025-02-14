@@ -8,27 +8,7 @@ A simple note taking plugin for neovim. It is inspired by [denote](https://githu
 - **Search Notes**: Search for notes within a specified directory.
 - **Live Grep**: Perform live grep searches within your notes.
 
-## Installation
-
-### Using mini.deps
-
-Installation instructions: [mini.deps](https://github.com/echasnovski/mini.deps#installation)
-
-```lua
-local add = require("mini.deps").add
-
-add({
-    source = "phrmendes/notes.nvim",
-    depends = { "echasnovski/mini.nvim" },
-    -- depends = { "echasnovski/mini.pick" },
-})
-```
-
-## Configuration
-
-You can configure the plugin by calling the `setup` function. The default path for notes is `~/Documents/notes`.
-
-### lazy.nvim
+## Setup
 
 ```lua
 return {
@@ -43,22 +23,6 @@ return {
 		{ "<leader>nn", function() require("notes").new() end, desc = "New" },
 	},
 }
-```
-
-### mini.deps
-
-```lua
-local later = require("mini.deps")
-local add = require("mini.add")
-
-add({
-    source = "phrmendes/notes.nvim"
-	depends = { "echasnovski/mini.nvim" },
-})
-
-later(function()
-  require("notes").setup({ path = "path/to/your/notes" })
-end)
 ```
 
 ## Usage
