@@ -156,6 +156,11 @@ end
 notes.setup = function(opts)
 	opts = opts or {}
 	config.path = opts.path or vim.env.HOME .. "/Documents/notes"
+
+	if vim.fn.isdirectory(config.path) == 0 then
+		vim.fn.mkdir(config.path, "p")
+		vim.notify("Created notes directory at: " .. config.path, vim.log.levels.INFO)
+	end
 end
 
 return notes
