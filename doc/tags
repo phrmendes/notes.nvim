@@ -1,7 +1,7 @@
 add_content_to_file()	notes.txt	/*add_content_to_file()*
 create_tags()	notes.txt	/*create_tags()*
 generate_random_array()	notes.txt	/*generate_random_array()*
-normalize_string()	notes.txt	/*normalize_string()*
+normalize()	notes.txt	/*normalize()*
 notes	notes.txt	/*notes*
 notes.grep_live()	notes.txt	/*notes.grep_live()*
 notes.new()	notes.txt	/*notes.new()*

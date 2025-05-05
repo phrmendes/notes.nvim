@@ -26,18 +26,18 @@ local notes = {}
 local config = {}
 
 --- @class Setup
---- @field path string: Path to the notes directory
+--- @field path string Path to the notes directory
 
 --- @class FileContent
---- @field path string: The path to the file.
---- @field content string[]: The content to add to the file.
+--- @field path string The path to the file.
+--- @field content string[] The content to add to the file.
 
 --- Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
 --- and replacing spaces and non-word characters with underscores.
---- @param word string: The word to normalize.
---- @return string: The normalized word.
-local normalize_string = function(word)
-	local normalized_word = word:lower():gsub("[%z\1-\127\194-\244][\128-\191]*", function(c)
+--- @param input string The input to normalize.
+--- @return string normalized_string The normalized input.
+local normalize = function(input)
+	local normalized_input = input:lower():gsub("[%z\1-\127\194-\244][\128-\191]*", function(c)
 		return c:gsub("[áàâ]", "a")
 			:gsub("[éèê]", "e")
 			:gsub("[íìî]", "i")
@@ -46,16 +46,16 @@ local normalize_string = function(word)
 			:gsub("[ç]", "c")
 	end)
 
-	local string, _ = normalized_word:gsub("[%s%W]", "_")
+	normalized_input, _ = normalized_input:gsub("[%s%W]", "_")
 
-	return string
+	return normalized_input
 end
 
 --- Creates an array of tags from a string.
---- @param str string: The string to split.
---- @param sep string: The separator to use for splitting the string.
---- @return string: A string with tags separated by commas.
-local function create_tags(str, sep)
+--- @param str string The string to split.
+--- @param sep string The separator to use for splitting the string.
+--- @return string tags A string with tags separated by commas.
+local create_tags = function(str, sep)
 	local tags = {}
 
 	for i in string.gmatch(str, "([^" .. sep .. "]+)") do
@@ -69,9 +69,9 @@ local function create_tags(str, sep)
 end
 
 --- Generates an array of random characters or numbers.
---- @param n number: The length of the array.
---- @param char? boolean: If true, generates random uppercase letters; otherwise, generates random numbers.
---- @return (integer | string)[]: An array of random characters or numbers.
+--- @param n number The length of the array.
+--- @param char? boolean If true, generates random uppercase letters; otherwise, generates random numbers.
+--- @return (integer | string)[] random_arr An array of random characters or numbers.
 local generate_random_array = function(n, char)
 	local array = {}
 	local upper, lower
@@ -94,8 +94,8 @@ local generate_random_array = function(n, char)
 end
 
 --- Adds content to a file.
---- @param opts FileContent: Options for adding content to a file.
-local function add_content_to_file(opts)
+--- @param opts FileContent Options for adding content to a file.
+local add_content_to_file = function(opts)
 	vim.cmd("vnew " .. opts.path)
 
 	local buf = vim.api.nvim_get_current_buf()
@@ -104,7 +104,7 @@ local function add_content_to_file(opts)
 end
 
 --- Search for notes (in markdown files)
---- @param path string | nil: Path to search in
+--- @param path string | nil Path to search in
 --- @return nil
 notes.search = function(path)
 	path = path or config.path
@@ -113,7 +113,7 @@ notes.search = function(path)
 end
 
 --- Live grep in notes (in markdown files)
---- @param path string | nil: Path to grep in
+--- @param path string | nil Path to grep in
 --- @return nil
 notes.grep_live = function(path)
 	path = path or config.path
@@ -122,7 +122,7 @@ notes.grep_live = function(path)
 end
 
 --- Create a new note
---- @param path string | nil: Path to create the note in
+--- @param path string | nil Path to create the note in
 --- @return nil
 notes.new = function(path)
 	path = path or config.path
@@ -138,7 +138,7 @@ notes.new = function(path)
 
 		local opts = {
 			content = { "# " .. title, "" },
-			path = path .. "/" .. date .. id .. "-" .. normalize_string(title) .. ".md",
+			path = path .. "/" .. date .. id .. "-" .. normalize(title) .. ".md",
 		}
 
 		vim.ui.input({ prompt = "Tags (separated by comma): " }, function(tags)

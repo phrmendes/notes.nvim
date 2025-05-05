@@ -29,62 +29,62 @@ return {
 
 ------------------------------------------------------------------------------
 @class Setup
-@field path string: Path to the notes directory
+@field path string Path to the notes directory
 
 ------------------------------------------------------------------------------
 @class FileContent
-@field path string: The path to the file.
-@field content string[]: The content to add to the file.
+@field path string The path to the file.
+@field content string[] The content to add to the file.
 
 ------------------------------------------------------------------------------
-                                                            *normalize_string()*
-                           `normalize_string`({word})
+                                                                   *normalize()*
+                              `normalize`({input})
 Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
 and replacing spaces and non-word characters with underscores.
-@param word string: The word to normalize.
-@return string: The normalized word.
+@param input string The input to normalize.
+@return string normalized_string The normalized input.
 
 ------------------------------------------------------------------------------
                                                                  *create_tags()*
                           `create_tags`({str}, {sep})
 Creates an array of tags from a string.
-@param str string: The string to split.
-@param sep string: The separator to use for splitting the string.
-@return string: A string with tags separated by commas.
+@param str string The string to split.
+@param sep string The separator to use for splitting the string.
+@return string tags A string with tags separated by commas.
 
 ------------------------------------------------------------------------------
                                                        *generate_random_array()*
                       `generate_random_array`({n}, {char})
 Generates an array of random characters or numbers.
-@param n number: The length of the array.
-@param char? boolean: If true, generates random uppercase letters; otherwise, generates random numbers.
-@return (integer | string)[]: An array of random characters or numbers.
+@param n number The length of the array.
+@param char? boolean If true, generates random uppercase letters; otherwise, generates random numbers.
+@return (integer | string)[] random_arr An array of random characters or numbers.
 
 ------------------------------------------------------------------------------
                                                          *add_content_to_file()*
                          `add_content_to_file`({opts})
 Adds content to a file.
-@param opts FileContent: Options for adding content to a file.
+@param opts FileContent Options for adding content to a file.
 
 ------------------------------------------------------------------------------
                                                                 *notes.search()*
                              `notes.search`({path})
 Search for notes (in markdown files)
-@param path string | nil: Path to search in
+@param path string | nil Path to search in
 @return nil
 
 ------------------------------------------------------------------------------
                                                              *notes.grep_live()*
                            `notes.grep_live`({path})
 Live grep in notes (in markdown files)
-@param path string | nil: Path to grep in
+@param path string | nil Path to grep in
 @return nil
 
 ------------------------------------------------------------------------------
                                                                    *notes.new()*
                               `notes.new`({path})
 Create a new note
-@param path string | nil: Path to create the note in
+@param path string | nil Path to create the note in
 @return nil
 
 ------------------------------------------------------------------------------
