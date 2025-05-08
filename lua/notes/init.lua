@@ -3,37 +3,21 @@
 ---
 --- MIT License Copyright (c) 2024 Pedro Mendes
 ---
---- # Setup ~
----
---- >lua
---- return {
---- 	"phrmendes/notes.nvim",
---- 	dependencies = { "folke/snacks.nvim" },
---- 	opts = {
---- 		path = vim.env.HOME .. "/Documents/notes",
---- 	},
---- 	keys = {
---- 		{ "<leader>ns", function() require("notes").search() end, desc = "Search" },
---- 		{ "<leader>n/", function() require("notes").grep_live() end, desc = "Live grep" },
---- 		{ "<leader>nn", function() require("notes").new() end, desc = "New" },
---- 	},
---- }
---- <
----
 --- ==============================================================================
---- @module 'notes'
+--- @module "notes"
 local notes = {}
 local config = {}
 
 --- @class Setup
 --- @field path string Path to the notes directory
+--- @field picker "snacks" | "mini" Picker for files and live grep
 
 --- @class FileContent
 --- @field path string The path to the file.
 --- @field content string[] The content to add to the file.
 
---- Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
---- and replacing spaces and non-word characters with underscores.
+--- Normalizes a word by converting it to lowercase, replacing accented characters with
+--- their unaccented equivalents, and replacing spaces and non-word characters with underscores.
 --- @param input string The input to normalize.
 --- @return string normalized_string The normalized input.
 local normalize = function(input)
@@ -96,9 +80,13 @@ end
 --- Adds content to a file.
 --- @param opts FileContent Options for adding content to a file.
 local add_content_to_file = function(opts)
-	vim.cmd("vnew " .. opts.path)
+	local buf = vim.api.nvim_create_buf(true, false)
 
-	local buf = vim.api.nvim_get_current_buf()
+	vim.api.nvim_open_win(buf, true, { split = "right" })
+
+	vim.api.nvim_buf_call(buf, function()
+		vim.cmd("edit " .. opts.path)
+	end)
 
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, opts.content)
 end
@@ -109,7 +97,20 @@ end
 notes.search = function(path)
 	path = path or config.path
 
-	require("snacks").picker.files({ dirs = { path }, ft = "md" })
+	if config.picker == "snacks" then
+		require("snacks").picker.files({ dirs = { path }, ft = "md" })
+		return
+	end
+
+	require("mini.pick").builtin.cli({ command = { "fd", "-t", "f", "-e", "md" } }, {
+		source = {
+			name = "Notes",
+			cwd = path,
+			show = function(buf_id, items, query)
+				require("mini.pick").default_show(buf_id, items, query, { show_icons = true })
+			end,
+		},
+	})
 end
 
 --- Live grep in notes (in markdown files)
@@ -118,7 +119,20 @@ end
 notes.grep_live = function(path)
 	path = path or config.path
 
-	require("snacks").picker.grep({ dirs = { path }, ft = "md" })
+	if config.picker == "snacks" then
+		require("snacks").picker.grep({ dirs = { path }, ft = "md" })
+		return
+	end
+
+	require("mini.pick").builtin.grep_live({ globs = { "*.md" } }, {
+		source = {
+			name = "Search in notes",
+			cwd = path,
+			show = function(buf_id, items, query)
+				require("mini.pick").default_show(buf_id, items, query, { show_icons = true })
+			end,
+		},
+	})
 end
 
 --- Create a new note
@@ -129,7 +143,7 @@ notes.new = function(path)
 
 	vim.ui.input({ prompt = "Title: " }, function(title)
 		if title == "" or title == nil then
-			vim.notify("Note not created: title can't be empty", vim.log.levels.ERROR)
+			vim.notify("Note not created: title can't be empty.", vim.log.levels.ERROR)
 			return
 		end
 
@@ -156,6 +170,7 @@ end
 notes.setup = function(opts)
 	opts = opts or {}
 	config.path = opts.path or vim.env.HOME .. "/Documents/notes"
+	config.picker = opts.picker or "snacks"
 
 	if vim.fn.isdirectory(config.path) == 0 then
 		vim.fn.mkdir(config.path, "p")

@@ -7,29 +7,13 @@ A simple note taking plugin for neovim.
 
 MIT License Copyright (c) 2024 Pedro Mendes
 
-# Setup ~
-
->lua
-return {
-	"phrmendes/notes.nvim",
-	dependencies = { "folke/snacks.nvim" },
-	opts = {
-		path = vim.env.HOME .. "/Documents/notes",
-	},
-	keys = {
-		{ "<leader>ns", function() require("notes").search() end, desc = "Search" },
-		{ "<leader>n/", function() require("notes").grep_live() end, desc = "Live grep" },
-		{ "<leader>nn", function() require("notes").new() end, desc = "New" },
-	},
-}
-<
-
 ==============================================================================
-@module 'notes'
+@module "notes"
 
 ------------------------------------------------------------------------------
 @class Setup
 @field path string Path to the notes directory
+@field picker "snacks" | "mini" Picker for files and live grep
 
 ------------------------------------------------------------------------------
 @class FileContent
@@ -39,8 +23,8 @@ return {
 ------------------------------------------------------------------------------
                                                                    *normalize()*
                               `normalize`({input})
-Normalizes a word by converting it to lowercase, replacing accented characters with their unaccented equivalents,
-and replacing spaces and non-word characters with underscores.
+Normalizes a word by converting it to lowercase, replacing accented characters with
+their unaccented equivalents, and replacing spaces and non-word characters with underscores.
 @param input string The input to normalize.
 @return string normalized_string The normalized input.
 

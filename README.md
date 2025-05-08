@@ -13,9 +13,13 @@ A simple note taking plugin for neovim. It is inspired by [denote](https://githu
 ```lua
 return {
 	"phrmendes/notes.nvim",
-	dependencies = { "echasnovski/mini.nvim" },
+	dependencies = {
+        "folke/snacks.nvim",
+        -- or "echasnovski/mini.nvim",
+	},
 	opts = {
 		path = vim.env.HOME .. "/Documents/notes",
+        picker = "snacks" -- or "mini"
 	},
 	keys = {
 		{ "<leader>ns", function() require("notes").search() end, desc = "Search" },
@@ -24,6 +28,8 @@ return {
 	},
 }
 ```
+
+As dependencies, you need to have [fd](https://github.com/sharkdp/fd) and [ripgrep](https://github.com/BurntSushi/ripgrep) installed.
 
 ## Usage
 
