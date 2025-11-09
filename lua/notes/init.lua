@@ -30,7 +30,7 @@ local normalize = function(input)
 			:gsub("[ç]", "c")
 	end)
 
-	normalized_input, _ = normalized_input:gsub("[%s%W]", "_")
+	normalized_input, _ = normalized_input:gsub("[^%w%s]", ""):gsub("%s+", "-")
 
 	return normalized_input
 end
