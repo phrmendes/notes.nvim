@@ -1,81 +1,125 @@
-==============================================================================
-------------------------------------------------------------------------------
-                                                                         *notes*
-                                    `notes`
-
 A simple note taking plugin for neovim.
 
 MIT License Copyright (c) 2024 Pedro Mendes
 
-==============================================================================
-@module "notes"
+================================================================================
+NOTES.NVIM                                                        *notes.nvim*
 
-------------------------------------------------------------------------------
-@class Setup
-@field path string Path to the notes directory
-@field picker "snacks" | "mini" Picker for files and live grep
+A simple note taking plugin for neovim.
 
-------------------------------------------------------------------------------
-@class FileContent
-@field path string The path to the file.
-@field content string[] The content to add to the file.
+================================================================================
+SETUP                                                              *notes.setup()*
 
-------------------------------------------------------------------------------
-                                                                   *normalize()*
-                              `normalize`({input})
-Normalizes a word by converting it to lowercase, replacing accented characters with
-their unaccented equivalents, and replacing spaces and non-word characters with underscores.
-@param input string The input to normalize.
-@return string normalized_string The normalized input.
+`notes.setup`({opts})
 
-------------------------------------------------------------------------------
-                                                                 *create_tags()*
-                          `create_tags`({str}, {sep})
-Creates an array of tags from a string.
-@param str string The string to split.
-@param sep string The separator to use for splitting the string.
-@return string tags A string with tags separated by commas.
-
-------------------------------------------------------------------------------
-                                                       *generate_random_array()*
-                      `generate_random_array`({n}, {char})
-Generates an array of random characters or numbers.
-@param n number The length of the array.
-@param char? boolean If true, generates random uppercase letters; otherwise, generates random numbers.
-@return (integer | string)[] random_arr An array of random characters or numbers.
-
-------------------------------------------------------------------------------
-                                                         *add_content_to_file()*
-                         `add_content_to_file`({opts})
-Adds content to a file.
-@param opts FileContent Options for adding content to a file.
-
-------------------------------------------------------------------------------
-                                                                *notes.search()*
-                             `notes.search`({path})
-Search for notes (in markdown files)
-@param path string | nil Path to search in
-@return nil
-
-------------------------------------------------------------------------------
-                                                             *notes.grep_live()*
-                           `notes.grep_live`({path})
-Live grep in notes (in markdown files)
-@param path string | nil Path to grep in
-@return nil
-
-------------------------------------------------------------------------------
-                                                                   *notes.new()*
-                              `notes.new`({path})
-Create a new note
-@param path string | nil Path to create the note in
-@return nil
-
-------------------------------------------------------------------------------
-                                                                 *notes.setup()*
-                             `notes.setup`({opts})
 Setup function
-@param opts Setup
 
+Parameters ~
+{opts} `(table | nil)` Configuration options
+
+  {path}   `(string)`  Path to the notes directory (default: ~/Documents/notes)
+  {picker} `(string)`  Picker backend: "native", or "mini"
+                       (default: auto-detects mini.pick if available)
+
+================================================================================
+COMMANDS                                                        *notes.commands*
+
+`notes.new`({path})                                            *notes.new()*
+
+Create a new note with title and tags via interactive prompts.
+
+Parameters ~
+{path} `(string | nil)` Optional path to create the note in (defaults to config path)
+
+`notes.search`({path})                                         *notes.search()*
+
+Search for notes (list .md files) using the configured picker.
+
+Parameters ~
+{path} `(string | nil)` Optional path to search in (defaults to config path)
+
+`notes.grep`({path})                                           *notes.grep()*
+
+Live grep in notes (in markdown files) using the configured picker.
+
+Parameters ~
+{path} `(string | nil)` Optional path to grep in (defaults to config path)
+
+`notes.register_picker`({name}, {backend})                     *notes.register_picker()*
+
+Register a custom picker backend.
+
+Use this to add support for pickers beyond the built-in "native" and "mini".
+The backend must provide `files(dir)` and `grep(dir)` functions.
+
+Parameters ~
+{name} `(string)` Backend name (used as picker value in setup)
+{backend} `(table)` Backend with .files(dir) and .grep(dir) methods
+
+Example:
+>lua
+  require("notes").register_picker("fzf", {
+    files = function(dir)
+      -- Your implementation
+    end,
+    grep = function(dir)
+      -- Your implementation
+    end,
+  })
+  require("notes").setup({ picker = "fzf" })
+<
+================================================================================
+CONFIGURATION CLASS                                              *notes.NotesConfig*
+
+`NotesConfig`
+
+Configuration table structure.
+
+Fields ~
+{path} `(string)` Path to the notes directory
+{picker} `"native"` | `"mini"` Resolved picker backend
+
+The picker is auto-detected once at plugin load when not explicitly specified.
+Custom backends can be registered using |notes.register_picker()|.
+
+================================================================================
+UTILITIES                                                      *notes.utilities*
+
+`utils.normalize`({input})                                     *M.normalize()*
+
+Normalizes a word by converting to lowercase, replacing accented characters,
+and replacing spaces/non-word characters with hyphens.
+
+Parameters ~
+{input} `(string)` The input to normalize.
+Return ~
+`(string)` normalized_string The normalized input.
+
+`utils.create_tags`({str}, {sep})                              *M.create_tags()*
+
+Creates a string of tags from a string.
+
+Parameters ~
+{str} `(string)` The string to split.
+{sep} `(string)` The separator to use for splitting the string.
+Return ~
+`(string)` tags A string with tags separated by commas and prefixed with #.
+
+`utils.generate_id`({n}, {char})                               *M.generate_id()*
+
+Generates a random string of characters or numbers.
+
+Parameters ~
+{n} `(number)` The length of the string.
+{char} `(optional)` `(boolean)` If true, generates random uppercase letters.
+Return ~
+`(string)` random_str A string of random characters or numbers.
+
+`utils.generate_file_id`()                                     *M.generate_file_id()*
+
+Generates a file ID with date prefix.
+
+Return ~
+`(string)` file_id A string in format YYYYMMDDXXXX (date + 4 random uppercase letters).
 
  vim:tw=78:ts=8:noet:ft=help:norl:

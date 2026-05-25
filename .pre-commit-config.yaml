@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: stylua
+        name: stylua
+        entry: nix run nixpkgs#stylua --
+        language: system
+        files: \.lua$
+
+      - id: luacheck
+        name: luacheck
+        entry: nix run nixpkgs#luaPackages.luacheck --
+        language: system
+        files: \.lua$

@@ -1,40 +1,118 @@
 # notes.nvim
 
-A simple note taking plugin for neovim. It is inspired by [denote](https://github.com/protesilaos/denote). This plugin is designed to be used with [mini.pick](https://github.com/echasnovski/mini.pick) and [marksman](https://github.com/artempyanykh/marksman).
+A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/protesilaos/denote). Uses pure Neovim APIs (`vim.ui`, `vim.uv`, `vim.fs`) with optional `mini.pick` integration.
 
 ## Features
 
-- **Create Notes**: Easily create new notes with a title and tags.
-- **Search Notes**: Search for notes within a specified directory.
-- **Live Grep**: Perform live grep searches within your notes.
+- **Create Notes**: Easily create new notes with a title and tags. Empty titles become `"untitled"`.
+- **Search Notes**: Fuzzy-find notes in your notes directory
+- **Live Grep**: Search note contents with ripgrep
+- **Custom Backends**: Register custom picker backends via `register_picker()`
+
+## Requirements
+
+- Neovim 0.10+ (for `vim.uv`, `vim.fs`, `vim.system`)
+- [ripgrep](https://github.com/BurntSushi/ripgrep) (for native grep)
+- [fd](https://github.com/sharkdp/fd) (optional, for mini.pick backend)
+- [mini.pick](https://github.com/echasnovski/mini.nvim) (optional, auto-detected)
 
 ## Installation
 
-Using [`vim.pack`](https://github.com/folke/zen-mode.nvim):
+Using vim.pack:
 
 ```lua
-vim.pack.add({ "https://github.com/phrmendes/notes.nvim" })
+-- ~/.config/nvim/lua/plugins.lua or your plugin specification file
+vim.pack.add("phrmendes/notes.nvim", {
+  config = function()
+    require("notes").setup({
+      path = vim.env.HOME .. "/Documents/notes",
+      -- picker = "native",  -- or "mini", auto-detected if omitted
+    })
+  end,
+  keys = {
+    { "<leader>nn", function() require("notes").new() end, desc = "New note" },
+    { "<leader>ns", function() require("notes").search() end, desc = "Search notes" },
+    { "<leader>n/", function() require("notes").grep() end, desc = "Grep notes" },
+  },
+})
 ```
-
-As dependencies, you need to have [fd](https://github.com/sharkdp/fd) and [ripgrep](https://github.com/BurntSushi/ripgrep) installed.
 
 ## Setup
 
 ```lua
 require("notes").setup({
-  path = vim.env.HOME .. "/Documents/notes",
-  picker = "snacks" -- or "mini"
+  path = vim.env.HOME .. "/Documents/notes",  -- Notes directory
+  -- picker = "mini",  -- optional: "native" (vim.ui) or "mini" (mini.pick), auto-detected if omitted
 })
 ```
 
+### Configuration
+
+| Option   | Default             | Description                                                 |
+| -------- | ------------------- | ----------------------------------------------------------- |
+| `path`   | `~/Documents/notes` | Directory to store notes                                    |
+| `picker` | auto-detected       | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
+
+### Picker Auto-detection
+
+When `picker` is not specified, auto-detection happens once at plugin load:
+
+- If `mini.pick` is available → uses `mini.pick`
+- Otherwise → uses native `vim.ui.select`
+
 ## Usage
 
-Suggested keybindings:
+### Keybindings (suggested)
 
 ```lua
-vim.keymap.set("n", "<leader>ns", function() require("notes").search() end, { desc = "Search notes" })
-vim.keymap.set("n", "<leader>n/", function() require("notes").grep_live() end, { desc = "Live grep notes" })
 vim.keymap.set("n", "<leader>nn", function() require("notes").new() end, { desc = "New note" })
+vim.keymap.set("n", "<leader>ns", function() require("notes").search() end, { desc = "Search notes" })
+vim.keymap.set("n", "<leader>n/", function() require("notes").grep() end, { desc = "Grep notes" })
 ```
 
-Check the [help file](./doc/notes.txt) for more information.
+### Commands
+
+- `:lua require("notes").new()` - Create a new note (prompts for title and tags)
+- `:lua require("notes").search()` - Search notes by filename
+- `:lua require("notes").grep()` - Grep note contents
+- `:lua require("notes").register_picker("fzf", { files = ..., grep = ... })` - Register a custom picker backend
+
+### Note Naming Convention
+
+Notes are named: `YYYYMMDDXXXX-title.md`
+
+- `YYYYMMDD` - Date of creation
+- `XXXX` - Random 4-character ID (prevents collisions)
+- `title` - Normalized title (lowercase, spaces → hyphens, special chars removed)
+- Empty title → heading is `"untitled"`, filename is `YYYYMMDDXXXX-untitled.md`
+
+Example: `20250124ABCD-my-meeting-notes.md`
+
+## Testing
+
+This plugin uses [mini.test](https://github.com/echasnovski/mini.nvim) for testing.
+
+### Run all tests
+
+```bash
+just test
+```
+
+### Run specific test file
+
+```bash
+just test_file tests/test_utils.lua
+just test_file tests/test_note.lua
+just test_file tests/test_picker.lua
+just test_file tests/test_integration.lua
+```
+
+### Test requirements
+
+- `just` (command runner)
+- Neovim 0.10+
+- mini.nvim (auto-downloaded by test runner)
+
+## License
+
+MIT License Copyright (c) 2024 Pedro Mendes
