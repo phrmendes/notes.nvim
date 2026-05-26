@@ -25,38 +25,13 @@ end
 --- Assert that a file exists
 ---@param child MiniTest.child
 ---@param file_path string
-M.assert_file_exists = function(child, file_path)
-	eq(child.lua_get(string.format("vim.uv.fs_stat(%q) ~= nil", file_path)), true)
-end
-
---- Assert that a file does not exist
----@param child MiniTest.child
----@param file_path string
-M.assert_file_not_exists = function(child, file_path)
-	eq(child.lua_get(string.format("vim.uv.fs_stat(%q) == nil", file_path)), true)
-end
+M.assert_file_exists = function(child, file_path) eq(child.lua_get(string.format("vim.uv.fs_stat(%q) ~= nil", file_path)), true) end
 
 --- Read file content
 ---@param child MiniTest.child
 ---@param file_path string
 ---@return string[]
-M.read_file = function(child, file_path)
-	return child.lua_get(string.format("vim.fn.readfile(%q)", file_path))
-end
-
---- Cleanup files and directories
----@param child MiniTest.child
----@param ... string
-M.cleanup_files = function(child, ...)
-	vim.iter({ ... }):each(function(path)
-		if path then
-			local stat = child.lua_get(string.format("vim.uv.fs_stat(%q)", path))
-			if stat then
-				child.lua(string.format("vim.fn.delete(%q, 'rf')", path))
-			end
-		end
-	end)
-end
+M.read_file = function(child, file_path) return child.lua_get(string.format("vim.fn.readfile(%q)", file_path)) end
 
 --- Create note files in a directory
 ---@param child MiniTest.child
@@ -65,12 +40,7 @@ end
 M.create_note_files = function(child, dir, files)
 	vim.iter(files):each(function(filename, content)
 		local full_path = vim.fs.joinpath(dir, filename)
-		local content_table = vim
-			.iter(vim.split(content, "\n"))
-			:map(function(line)
-				return string.format("%q", line)
-			end)
-			:totable()
+		local content_table = vim.iter(vim.split(content, "\n")):map(function(line) return string.format("%q", line) end):totable()
 
 		child.lua(string.format("vim.fn.writefile({ %s }, %q)", table.concat(content_table, ", "), full_path))
 	end)
@@ -84,18 +54,12 @@ M.new_child_set = function()
 	local child = test.new_child_neovim()
 	local T = test.new_set({
 		hooks = {
-			pre_case = function()
-				child.restart({ "-u", "scripts/init.lua" })
-			end,
+			pre_case = function() child.restart({ "-u", "scripts/init.lua" }) end,
 			post_case = function()
 				local temp_dirs = child.lua_get("vim.fn.glob('/tmp/notes.nvim/test_*', 0, 1)")
-				vim.iter(temp_dirs):each(function(dir)
-					child.lua(string.format("vim.fn.delete(%q, 'rf')", dir))
-				end)
+				vim.iter(temp_dirs):each(function(dir) child.lua(string.format("vim.fn.delete(%q, 'rf')", dir)) end)
 			end,
-			post_once = function()
-				child.stop()
-			end,
+			post_once = function() child.stop() end,
 		},
 	})
 	return child, T
@@ -115,9 +79,7 @@ end
 --- Get items captured by mock.select
 ---@param child MiniTest.child
 ---@return table
-function M.mock.select_items(child)
-	return child.lua_get("_G.mocked_select[1]")
-end
+function M.mock.select_items(child) return child.lua_get("_G.mocked_select[1]") end
 
 --- Mock vim.ui.input with a single canned response
 ---@param child MiniTest.child
@@ -137,12 +99,7 @@ end
 ---@param child MiniTest.child
 ---@param responses string[]
 function M.mock.sequential_input(child, responses)
-	local quoted = vim
-		.iter(responses)
-		:map(function(r)
-			return string.format("%q", r)
-		end)
-		:totable()
+	local quoted = vim.iter(responses):map(function(r) return string.format("%q", r) end):totable()
 
 	child.lua(string.format(
 		[[

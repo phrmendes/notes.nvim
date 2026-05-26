@@ -56,4 +56,26 @@ T["native grep"]["finds matching file"] = function()
 	eq(#items > 0, true)
 end
 
+T["native grep"]["shows no matches for absent pattern"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	child.lua(string.format([[vim.fn.writefile({ "hello world" }, %q .. "/test.md")]], temp_dir))
+
+	child.lua([[
+		_G.notified = {}
+		vim.notify = function(msg, level)
+			_G.notified[1] = msg
+		end
+		vim.ui.input = function(_, callback)
+			callback("ZZXYZWQXYZXYZQ")
+		end
+	]])
+
+	utils.setup(child, temp_dir, "native")
+	child.lua(string.format([[require("notes.picker").grep(%q)]], temp_dir))
+
+	local notified = child.lua_get("_G.notified[1]")
+	eq(notified, "No matches found")
+end
+
 return T

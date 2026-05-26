@@ -5,7 +5,7 @@
 ---@private
 local M = {}
 
---- Normalizes a word by converting it to lowercase, replacing accented characters with
+--- Normalizes a word by converting it to lowercase, then replacing accented
 --- their unaccented equivalents, and replacing spaces and non-word characters with hyphens.
 ---@param input string The input to normalize.
 ---@return string normalized_string The normalized input.
@@ -42,39 +42,9 @@ M.normalize = function(input)
 		["ñ"] = "n",
 		["ç"] = "c",
 		["ß"] = "ss",
-		["Á"] = "A",
-		["À"] = "A",
-		["Â"] = "A",
-		["Ã"] = "A",
-		["Ä"] = "A",
-		["Å"] = "A",
-		["É"] = "E",
-		["È"] = "E",
-		["Ê"] = "E",
-		["Ë"] = "E",
-		["Í"] = "I",
-		["Ì"] = "I",
-		["Î"] = "I",
-		["Ï"] = "I",
-		["Ó"] = "O",
-		["Ò"] = "O",
-		["Ô"] = "O",
-		["Õ"] = "O",
-		["Ö"] = "O",
-		["Ø"] = "O",
-		["Ú"] = "U",
-		["Ù"] = "U",
-		["Û"] = "U",
-		["Ü"] = "U",
-		["Ý"] = "Y",
-		["Ÿ"] = "Y",
-		["Ñ"] = "N",
-		["Ç"] = "C",
 	}
 
-	vim.iter(replacements):each(function(accented, plain)
-		normalized_input = normalized_input:gsub(accented, plain)
-	end)
+	vim.iter(replacements):each(function(accented, plain) normalized_input = normalized_input:gsub(accented, plain) end)
 
 	normalized_input = normalized_input:gsub("[^%w%s]", ""):gsub("%s+", "-")
 
@@ -86,12 +56,7 @@ end
 ---@param sep string The separator to use for splitting the string.
 ---@return string tags A string with tags separated by commas and prefixed with #.
 M.create_tags = function(str, sep)
-	local tags = vim
-		.iter(string.gmatch(str, "([^" .. sep .. "]+)"))
-		:map(function(i)
-			return "#" .. i:gsub("^%s*(.-)%s*$", "%1")
-		end)
-		:totable()
+	local tags = vim.iter(string.gmatch(str, "([^" .. sep .. "]+)")):map(function(i) return "#" .. i:gsub("^%s*(.-)%s*$", "%1") end):totable()
 
 	return table.concat(tags, ", ")
 end
@@ -114,9 +79,7 @@ end
 
 --- Generates a file ID with date prefix.
 ---@return string file_id A string in format YYYYMMDDXXXX (date + 4 random uppercase letters)
-M.generate_file_id = function()
-	return os.date("%Y%m%d") .. M.generate_id(4, true)
-end
+M.generate_file_id = function() return os.date("%Y%m%d") .. M.generate_id(4, true) end
 
 --- Parse a YYYY-MM-DD date string into a time value
 ---@param date_string string

@@ -42,12 +42,7 @@ vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { d
 
 ### Configuration
 
-| Option                 | Default             | Description                                                 |
-| ---------------------- | ------------------- | ----------------------------------------------------------- |
-| `path`                 | `~/Documents/notes` | Directory to store notes                                    |
-| `picker`               | auto-detected       | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
-| `journal.path`         | `{path}/journal`    | Directory to store journal entries                          |
-| `journal.title_format` | `"%Y-%m-%d"`        | `os.date` format for journal entry heading                  |
+See `:help notes.NotesConfig` for all configuration options.
 
 ### Picker Auto-detection
 
@@ -60,23 +55,10 @@ When `picker` is not specified, auto-detection happens once at plugin load:
 
 ### Commands
 
-- `:Notes new` — Create a new note (prompts for title and tags)
+- `:Notes new` — Create a new note
 - `:Notes search` — Search notes by filename
 - `:Notes grep` — Grep note contents
-- `:Notes journal` — Open today's journal entry (creates if absent)
-- `:Notes journal 2026-05-25` — Open a specific date's entry
-- `:Notes journal 2026-05-25 work,daily` — Today's entry with custom tags (#journal always present)
-
-### Note Naming Convention
-
-Notes are named: `YYYYMMDDXXXX-title.md`
-
-- `YYYYMMDD` - Date of creation
-- `XXXX` - Random 4-character ID (prevents collisions)
-- `title` - Normalized title (lowercase, spaces → hyphens, special chars removed)
-- Empty title → heading is `"untitled"`, filename is `YYYYMMDDXXXX-untitled.md`
-
-Example: `20250124ABCD-my-meeting-notes.md`
+- `:Notes journal [date] [tags]` — Open or create a journal entry
 
 ## Testing
 
@@ -95,6 +77,7 @@ just test_file tests/test_utils.lua
 just test_file tests/test_note.lua
 just test_file tests/test_picker.lua
 just test_file tests/test_integration.lua
+just test_file tests/test_journal.lua
 ```
 
 ### Test requirements

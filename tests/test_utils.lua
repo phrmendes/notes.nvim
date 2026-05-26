@@ -18,9 +18,7 @@ vim
 		{ "handles umlauts 2", "Straße", "strasse" },
 	})
 	:each(function(case)
-		T["normalize"][case[1]] = function()
-			eq(utils.normalize(case[2]), case[3])
-		end
+		T["normalize"][case[1]] = function() eq(utils.normalize(case[2]), case[3]) end
 	end)
 
 T["create_tags"] = new_set()
@@ -31,9 +29,7 @@ vim
 		{ "semicolon separator", "one;two;three", ";", "#one, #two, #three" },
 	})
 	:each(function(case)
-		T["create_tags"][case[1]] = function()
-			eq(utils.create_tags(case[2], case[3]), case[4])
-		end
+		T["create_tags"][case[1]] = function() eq(utils.create_tags(case[2], case[3]), case[4]) end
 	end)
 
 T["generate_id"] = new_set()
@@ -73,5 +69,18 @@ T["generate_file_id"]["generates different ids each call"] = function()
 	local id2 = utils.generate_file_id()
 	eq(id1:sub(9, 12) ~= id2:sub(9, 12), true)
 end
+
+T["parse_date"] = new_set()
+vim
+	.iter({
+		{ "parses valid YYYY-MM-DD", "2026-01-15", true },
+		{ "returns nil for invalid format", "2026/01/15", false },
+	})
+	:each(function(case)
+		T["parse_date"][case[1]] = function()
+			local result = utils.parse_date(case[2])
+			eq((result ~= nil), case[3])
+		end
+	end)
 
 return T
