@@ -83,6 +83,8 @@ vim.api.nvim_create_user_command("Notes", function(opts)
 		M.grep()
 	elseif sub == "journal" then
 		M.journal(args[2], args[3])
+	else
+		vim.notify("Unknown Notes command: " .. (sub or ""), vim.log.levels.ERROR)
 	end
 end, {
 	nargs = "*",
