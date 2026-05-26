@@ -13,9 +13,7 @@ local M = {}
 
 --- Setup function
 ---@param opts UserConfig | nil Configuration options
-function M.setup(opts)
-	config.setup(opts)
-end
+function M.setup(opts) config.setup(opts) end
 
 --- Create a new note
 ---@param path string | nil Path to create the note in
@@ -26,30 +24,22 @@ function M.new(path)
 			return
 		end
 
-		vim.ui.input({ prompt = "Tags (comma-separated): " }, function(tags)
-			note.create(title, tags, path)
-		end)
+		vim.ui.input({ prompt = "Tags (comma-separated): " }, function(tags) note.create(title, tags, path) end)
 	end)
 end
 
 --- Open or create a journal entry
 ---@param date string | nil Date in YYYY-MM-DD format (defaults to today)
 ---@param tags string | nil Comma-separated tags (appended to #journal)
-function M.journal(date, tags)
-	journal.open(date, tags)
-end
+function M.journal(date, tags) journal.open(date, tags) end
 
 --- Search for notes (in markdown files)
 ---@param path string | nil Path to search in
-function M.search(path)
-	picker.files(path)
-end
+function M.search(path) picker.files(path) end
 
 --- Live grep in notes (in markdown files)
 ---@param path string | nil Path to grep in
-function M.grep(path)
-	picker.grep(path)
-end
+function M.grep(path) picker.grep(path) end
 
 --- Register a custom picker backend
 ---
@@ -67,23 +57,13 @@ end
 ---   })
 ---   require("notes").setup({ picker = "fzf" })
 --- <
-function M.register_picker(name, backend)
-	picker.register(name, backend)
-end
+function M.register_picker(name, backend) picker.register(name, backend) end
 
 local commands = {
-	new = function()
-		M.new()
-	end,
-	search = function()
-		M.search()
-	end,
-	grep = function()
-		M.grep()
-	end,
-	journal = function(args)
-		M.journal(args[2], args[3])
-	end,
+	new = function() M.new() end,
+	search = function() M.search() end,
+	grep = function() M.grep() end,
+	journal = function(args) M.journal(args[2], args[3]) end,
 }
 
 vim.api.nvim_create_user_command("Notes", function(opts)
@@ -99,9 +79,7 @@ vim.api.nvim_create_user_command("Notes", function(opts)
 end, {
 	nargs = "*",
 	desc = "Notes commands: " .. table.concat(vim.tbl_keys(commands), ", "),
-	complete = function()
-		return vim.tbl_keys(commands)
-	end,
+	complete = function() return vim.tbl_keys(commands) end,
 })
 
 return M
