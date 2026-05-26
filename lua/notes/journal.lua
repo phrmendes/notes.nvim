@@ -33,7 +33,7 @@ end
 ---@return string full_path
 local function build_path(time, journal_path)
 	local title = tostring(os.date(config.journal.title_format, time))
-	local filename = tostring(os.date(config.journal.filename_format, time)):gsub("/", "-") .. ".md"
+	local filename = os.date("%Y%m%d", time) .. ".md"
 	local path = vim.fs.joinpath(journal_path, filename)
 	return title, path
 end
@@ -58,10 +58,10 @@ local function write_entry(path, title, tags)
 end
 
 --- Open or create a journal entry for the given date
----@param date_string string | nil Date in YYYY-MM-DD format (defaults to today)
+---@param date string | nil Date in YYYY-MM-DD format (defaults to today)
 ---@param tags string | nil Comma-separated user tags
 ---@return string | nil The path of the journal entry, or nil if creation failed
-function M.open(date_string, tags)
+function M.open(date, tags)
 	local journal_path = config.journal.path
 
 	if not journal_path then
@@ -69,21 +69,21 @@ function M.open(date_string, tags)
 		return nil
 	end
 
-	local time, err = resolve_time(date_string)
+	local time, err = resolve_time(date)
 
 	if not time then
 		vim.notify(err or "Invalid journal date", vim.log.levels.ERROR)
 		return nil
 	end
 
-	local title, full_path = build_path(time, journal_path)
+	local title, path = build_path(time, journal_path)
 
-	if vim.uv.fs_stat(full_path) then
-		vim.cmd("edit " .. full_path)
-		return full_path
+	if vim.uv.fs_stat(path) then
+		vim.cmd("edit " .. path)
+		return path
 	end
 
-	return write_entry(full_path, title, tags)
+	return write_entry(path, title, tags)
 end
 
 return M

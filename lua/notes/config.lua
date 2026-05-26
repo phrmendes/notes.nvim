@@ -22,7 +22,6 @@ local defaults = {
 	journal = {
 		path = nil,
 		title_format = "%Y-%m-%d",
-		filename_format = "%Y-%m-%d",
 	},
 }
 
@@ -35,7 +34,6 @@ M.picker = nil
 ---@class NotesJournalConfig
 ---@field path string
 ---@field title_format string
----@field filename_format string
 
 ---@type NotesJournalConfig
 M.journal = {}
@@ -56,7 +54,6 @@ function M.setup(opts)
 
 	M.journal.path = merged.journal.path or vim.fs.joinpath(M.path, "journal")
 	M.journal.title_format = merged.journal.title_format
-	M.journal.filename_format = merged.journal.filename_format
 
 	utils.mkdirp(M.journal.path)
 end

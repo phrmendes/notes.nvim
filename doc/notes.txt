@@ -97,7 +97,6 @@ Fields ~
 {journal} `(table)` Journal configuration subtable
   {path} `(string)` Journal directory (default: {path}/journal)
   {title_format} `(string)` os.date format for journal heading (default: "%Y-%m-%d")
-  {filename_format} `(string)` os.date format for journal filename (default: "%Y-%m-%d")
 
 The picker is auto-detected once at plugin load when not explicitly specified.
 Custom backends can be registered using |notes.register_picker()|.

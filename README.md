@@ -55,7 +55,6 @@ require("notes").setup({
 | `picker` | auto-detected | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
 | `journal.path` | `{path}/journal` | Directory to store journal entries |
 | `journal.title_format` | `"%Y-%m-%d"` | `os.date` format for journal entry heading |
-| `journal.filename_format` | `"%Y-%m-%d"` | `os.date` format for journal filename (must be filesystem-safe) |
 
 ### Picker Auto-detection
 

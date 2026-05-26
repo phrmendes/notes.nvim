@@ -7,42 +7,34 @@ local p = test_utils.patterns
 local T = new_set()
 
 T["normalize"] = new_set()
-
-T["normalize"]["converts to lowercase"] = function()
-	eq(utils.normalize("HELLO"), "hello")
-end
-
-T["normalize"]["replaces spaces with hyphens"] = function()
-	eq(utils.normalize("hello world"), "hello-world")
-end
-
-T["normalize"]["removes special characters"] = function()
-	eq(utils.normalize("Café & bistro"), "cafe-bistro")
-end
-
-T["normalize"]["handles accented characters"] = function()
-	eq(utils.normalize("São Paulo"), "sao-paulo")
-	eq(utils.normalize("Tést Title"), "test-title")
-end
-
-T["normalize"]["handles umlauts"] = function()
-	eq(utils.normalize("Müller"), "muller")
-	eq(utils.normalize("Straße"), "strasse")
-end
+vim
+	.iter({
+		{ "converts to lowercase", "HELLO", "hello" },
+		{ "replaces spaces with hyphens", "hello world", "hello-world" },
+		{ "removes special characters", "Café & bistro", "cafe-bistro" },
+		{ "handles accented characters 1", "São Paulo", "sao-paulo" },
+		{ "handles accented characters 2", "Tést Title", "test-title" },
+		{ "handles umlauts 1", "Müller", "muller" },
+		{ "handles umlauts 2", "Straße", "strasse" },
+	})
+	:each(function(case)
+		T["normalize"][case[1]] = function()
+			eq(utils.normalize(case[2]), case[3])
+		end
+	end)
 
 T["create_tags"] = new_set()
-
-T["create_tags"]["creates tags from comma-separated string"] = function()
-	eq(utils.create_tags("a, b, c", ","), "#a, #b, #c")
-end
-
-T["create_tags"]["trims whitespace from tags"] = function()
-	eq(utils.create_tags("a ,  b  ,c", ","), "#a, #b, #c")
-end
-
-T["create_tags"]["handles semicolon separator"] = function()
-	eq(utils.create_tags("one;two;three", ";"), "#one, #two, #three")
-end
+vim
+	.iter({
+		{ "comma-separated", "a, b, c", ",", "#a, #b, #c" },
+		{ "trims whitespace", "a ,  b  ,c", ",", "#a, #b, #c" },
+		{ "semicolon separator", "one;two;three", ";", "#one, #two, #three" },
+	})
+	:each(function(case)
+		T["create_tags"][case[1]] = function()
+			eq(utils.create_tags(case[2], case[3]), case[4])
+		end
+	end)
 
 T["generate_id"] = new_set()
 

@@ -3,6 +3,15 @@ local eq = test.expect.equality
 
 local M = {}
 
+---@type { date_prefix: string, id_suffix: string, md_end: string }
+M.patterns = {
+	date_prefix = "^%d%d%d%d%d%d%d%d",
+	id_suffix = "[A-Z][A-Z][A-Z][A-Z]",
+	md_end = "%.md$",
+}
+
+M.mock = {}
+
 --- Create a temporary directory for tests
 ---@param child MiniTest.child
 ---@return string temp_dir
@@ -92,8 +101,6 @@ M.new_child_set = function()
 	return child, T
 end
 
-M.mock = {}
-
 --- Mock vim.ui.select to capture items without selecting
 ---@param child MiniTest.child
 function M.mock.select(child)
@@ -163,10 +170,13 @@ M.setup = function(child, path, picker)
 	child.lua(string.format([[require("notes.config").setup(%s)]], opts))
 end
 
-M.patterns = {
-	date_prefix = "^%d%d%d%d%d%d%d%d",
-	id_suffix = "[A-Z][A-Z][A-Z][A-Z]",
-	md_end = "%.md$",
-}
+--- Glob journal entries in the child process
+---@param child MiniTest.child
+---@param temp_dir string
+---@return table
+M.journal_glob = function(child, temp_dir)
+	local pattern = vim.fs.joinpath(temp_dir, "journal")
+	return child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", pattern))
+end
 
 return M

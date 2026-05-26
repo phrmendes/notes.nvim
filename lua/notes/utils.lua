@@ -164,6 +164,7 @@ M.mkdirp = function(path)
 	end
 
 	local parent = vim.fs.dirname(path)
+
 	if parent and parent ~= path then
 		M.mkdirp(parent)
 	end
