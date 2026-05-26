@@ -61,20 +61,13 @@ T["native grep"]["shows no matches for absent pattern"] = function()
 
 	child.lua(string.format([[vim.fn.writefile({ "hello world" }, %q .. "/test.md")]], temp_dir))
 
-	child.lua([[
-		_G.notified = {}
-		vim.notify = function(msg, level)
-			_G.notified[1] = msg
-		end
-		vim.ui.input = function(_, callback)
-			callback("ZZXYZWQXYZXYZQ")
-		end
-	]])
+	utils.mock.notify(child)
+	utils.mock.input(child, "ZZXYZWQXYZXYZQ")
 
 	utils.setup(child, temp_dir, "native")
 	child.lua(string.format([[require("notes.picker").grep(%q)]], temp_dir))
 
-	local notified = child.lua_get("_G.notified[1]")
+	local notified = utils.mock.notify_message(child)
 	eq(notified, "No matches found")
 end
 

@@ -110,8 +110,13 @@ M.write_markdown_file = function(full_path, lines, label)
 		return nil
 	end
 
-	vim.uv.fs_write(fd, content)
+	local written = vim.uv.fs_write(fd, content)
 	vim.uv.fs_close(fd)
+
+	if written ~= #content then
+		vim.notify("Failed to write " .. label .. ": incomplete write", vim.log.levels.ERROR)
+		return nil
+	end
 
 	vim.cmd("edit " .. full_path)
 

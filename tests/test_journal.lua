@@ -134,28 +134,18 @@ T["journal"]["shows error for invalid date format"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 
 	utils.setup(child, temp_dir)
-	child.lua([[
-		_G.notified = {}
-		vim.notify = function(msg, level)
-			_G.notified[1] = msg
-		end
-		require("notes").journal("not-a-date")
-	]])
+	utils.mock.notify(child)
+	child.lua([[require("notes").journal("not-a-date")]])
 
-	local notified = child.lua_get("_G.notified[1]")
+	local notified = utils.mock.notify_message(child)
 	eq(notified ~= nil, true)
 end
 
 T["journal"]["shows error when setup not called"] = function()
-	child.lua([[
-		_G.notified = {}
-		vim.notify = function(msg, level)
-			_G.notified[1] = msg
-		end
-		require("notes").journal()
-	]])
+	utils.mock.notify(child)
+	child.lua([[require("notes").journal()]])
 
-	local notified = child.lua_get("_G.notified[1]")
+	local notified = utils.mock.notify_message(child)
 	eq(notified ~= nil, true)
 end
 

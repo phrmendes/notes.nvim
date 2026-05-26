@@ -114,6 +114,22 @@ function M.mock.sequential_input(child, responses)
 	))
 end
 
+--- Mock vim.notify to capture messages without displaying
+---@param child MiniTest.child
+function M.mock.notify(child)
+	child.lua([[
+		_G.mocked_notify = {}
+		vim.notify = function(msg, level)
+			_G.mocked_notify[1] = msg
+		end
+	]])
+end
+
+--- Get the last message captured by mock.notify
+---@param child MiniTest.child
+---@return string|nil
+function M.mock.notify_message(child) return child.lua_get("_G.mocked_notify[1]") end
+
 --- Setup notes configuration in the child process
 ---@param child MiniTest.child
 ---@param path string

@@ -28,37 +28,12 @@ M.mini = {}
 ---   })
 ---   require("notes").setup({ picker = "fzf" })
 --- <
-function M.register(name, backend)
-	M[name] = backend
-end
+function M.register(name, backend) M[name] = backend end
 
---- Native backend: list .md files using vim.uv.fs_scandir
+--- Native backend: list .md files recursively using vim.fs.dir
 ---@param dir string
 M.native.files = function(dir)
-	local handle = vim.uv.fs_scandir(dir)
-
-	if not handle then
-		return
-	end
-
-	local entries = vim
-		.iter(function()
-			return vim.uv.fs_scandir_next(handle)
-		end)
-		:map(function(name, type)
-			return { name = name, type = type }
-		end)
-		:totable()
-
-	local items = vim
-		.iter(entries)
-		:filter(function(e)
-			return e.type == "file" and vim.endswith(e.name, ".md")
-		end)
-		:map(function(e)
-			return vim.fs.joinpath(dir, e.name)
-		end)
-		:totable()
+	local items = vim.iter(vim.fs.dir(dir, { depth = nil })):filter(function(name) return vim.endswith(name, ".md") end):map(function(name) return vim.fs.joinpath(dir, name) end):totable()
 
 	vim.ui.select(items, { prompt = "Notes" }, function(choice)
 		if choice then
@@ -77,17 +52,17 @@ M.native.grep = function(dir)
 
 		local obj = vim.system({ "rg", "-n", "--no-heading", "--color=never", pattern, dir }, { text = true }):wait()
 
-		if obj.code ~= 0 and not obj.stdout then
+		if obj.code == 1 then
 			vim.notify("No matches found", vim.log.levels.INFO)
 			return
 		end
 
-		local items = vim
-			.iter(vim.split(obj.stdout or "", "\n", { trimempty = true }))
-			:filter(function(line)
-				return line:find(":%d+:") ~= nil
-			end)
-			:totable()
+		if obj.code ~= 0 then
+			vim.notify("Grep failed: exit code " .. obj.code, vim.log.levels.ERROR)
+			return
+		end
+
+		local items = vim.iter(vim.split(obj.stdout or "", "\n", { trimempty = true })):filter(function(line) return line:find(":%d+:") ~= nil end):totable()
 
 		if #items == 0 then
 			vim.notify("No matches found", vim.log.levels.INFO)
@@ -114,9 +89,7 @@ M.mini.files = function(dir)
 		source = {
 			name = "Notes",
 			cwd = dir,
-			show = function(buf_id, items, query)
-				pick.default_show(buf_id, items, query, { show_icons = true })
-			end,
+			show = function(buf_id, items, query) pick.default_show(buf_id, items, query, { show_icons = true }) end,
 		},
 	})
 end
@@ -130,9 +103,7 @@ M.mini.grep = function(dir)
 		source = {
 			name = "Search in notes",
 			cwd = dir,
-			show = function(buf_id, items, query)
-				mini_pick.default_show(buf_id, items, query, { show_icons = true })
-			end,
+			show = function(buf_id, items, query) mini_pick.default_show(buf_id, items, query, { show_icons = true }) end,
 		},
 	})
 end
