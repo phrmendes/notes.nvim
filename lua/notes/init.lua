@@ -71,4 +71,25 @@ function M.register_picker(name, backend)
 	picker.register(name, backend)
 end
 
+vim.api.nvim_create_user_command("Notes", function(opts)
+	local args = vim.split(opts.args, "%s+", { trimempty = true })
+	local sub = args[1]
+
+	if sub == "new" then
+		M.new()
+	elseif sub == "search" then
+		M.search()
+	elseif sub == "grep" then
+		M.grep()
+	elseif sub == "journal" then
+		M.journal(args[2], args[3])
+	end
+end, {
+	nargs = "*",
+	desc = "Notes commands: new, search, grep, journal",
+	complete = function()
+		return { "new", "search", "grep", "journal" }
+	end,
+})
+
 return M

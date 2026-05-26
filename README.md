@@ -1,12 +1,12 @@
 # notes.nvim
 
-A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/protesilaos/denote). Uses pure Neovim APIs (`vim.ui`, `vim.uv`, `vim.fs`) with optional `mini.pick` integration.
+A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/protesilaos/denote). Uses pure Neovim APIs with optional `mini.pick` integration.
 
 ## Features
 
 - **Create Notes**: Easily create new notes with a title and tags. Empty titles become `"untitled"`.
 - **Journal**: Open or create daily journal entries with automatic `#journal` tagging
-- **Search Notes**: Fuzzy-find notes in your notes directory
+- **Search Notes**: Find notes in your notes directory
 - **Live Grep**: Search note contents with ripgrep
 - **Custom Backends**: Register custom picker backends via `register_picker()`
 
@@ -22,9 +22,7 @@ A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/
 Add the plugin URL to your `vim.pack.add()` call:
 
 ```lua
-vim.pack.add({
-  "https://github.com/phrmendes/notes.nvim",
-})
+vim.pack.add({ "https://github.com/phrmendes/notes.nvim" })
 ```
 
 ## Setup
@@ -62,13 +60,12 @@ When `picker` is not specified, auto-detection happens once at plugin load:
 
 ### Commands
 
-- `:lua require("notes").new()` - Create a new note (prompts for title and tags)
-- `:lua require("notes").search()` - Search notes by filename
-- `:lua require("notes").grep()` - Grep note contents
-- `:lua require("notes").journal()` - Open today's journal entry (creates if absent)
-- `:lua require("notes").journal("2026-05-25")` - Open a specific date's entry
-- `:lua require("notes").journal(nil, "work, daily")` - Today's entry with custom tags (#journal always present)
-- `:lua require("notes").register_picker("fzf", { files = ..., grep = ... })` - Register a custom picker backend
+- `:Notes new` — Create a new note (prompts for title and tags)
+- `:Notes search` — Search notes by filename
+- `:Notes grep` — Grep note contents
+- `:Notes journal` — Open today's journal entry (creates if absent)
+- `:Notes journal 2026-05-25` — Open a specific date's entry
+- `:Notes journal 2026-05-25 work,daily` — Today's entry with custom tags (#journal always present)
 
 ### Note Naming Convention
 
