@@ -5,6 +5,7 @@
 ---
 
 local config = require("notes.config")
+local journal = require("notes.journal")
 local note = require("notes.note")
 local picker = require("notes.picker")
 
@@ -29,6 +30,13 @@ function M.new(path)
 			note.create(title, tags, path)
 		end)
 	end)
+end
+
+--- Open or create a journal entry
+---@param date string | nil Date in YYYY-MM-DD format (defaults to today)
+---@param tags string | nil Comma-separated tags (appended to #journal)
+function M.journal(date, tags)
+	journal.open(date, tags)
 end
 
 --- Search for notes (in markdown files)

@@ -5,6 +5,7 @@ A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/
 ## Features
 
 - **Create Notes**: Easily create new notes with a title and tags. Empty titles become `"untitled"`.
+- **Journal**: Open or create daily journal entries with automatic `#journal` tagging
 - **Search Notes**: Fuzzy-find notes in your notes directory
 - **Live Grep**: Search note contents with ripgrep
 - **Custom Backends**: Register custom picker backends via `register_picker()`
@@ -48,10 +49,13 @@ require("notes").setup({
 
 ### Configuration
 
-| Option   | Default             | Description                                                 |
-| -------- | ------------------- | ----------------------------------------------------------- |
-| `path`   | `~/Documents/notes` | Directory to store notes                                    |
-| `picker` | auto-detected       | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
+| Option | Default | Description |
+|---|---|---|
+| `path` | `~/Documents/notes` | Directory to store notes |
+| `picker` | auto-detected | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
+| `journal.path` | `{path}/journal` | Directory to store journal entries |
+| `journal.title_format` | `"%Y-%m-%d"` | `os.date` format for journal entry heading |
+| `journal.filename_format` | `"%Y-%m-%d"` | `os.date` format for journal filename (must be filesystem-safe) |
 
 ### Picker Auto-detection
 
@@ -68,6 +72,7 @@ When `picker` is not specified, auto-detection happens once at plugin load:
 vim.keymap.set("n", "<leader>nn", function() require("notes").new() end, { desc = "New note" })
 vim.keymap.set("n", "<leader>ns", function() require("notes").search() end, { desc = "Search notes" })
 vim.keymap.set("n", "<leader>n/", function() require("notes").grep() end, { desc = "Grep notes" })
+vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { desc = "Journal" })
 ```
 
 ### Commands
@@ -75,6 +80,9 @@ vim.keymap.set("n", "<leader>n/", function() require("notes").grep() end, { desc
 - `:lua require("notes").new()` - Create a new note (prompts for title and tags)
 - `:lua require("notes").search()` - Search notes by filename
 - `:lua require("notes").grep()` - Grep note contents
+- `:lua require("notes").journal()` - Open today's journal entry (creates if absent)
+- `:lua require("notes").journal("2026-05-25")` - Open a specific date's entry
+- `:lua require("notes").journal(nil, "work, daily")` - Today's entry with custom tags (#journal always present)
 - `:lua require("notes").register_picker("fzf", { files = ..., grep = ... })` - Register a custom picker backend
 
 ### Note Naming Convention

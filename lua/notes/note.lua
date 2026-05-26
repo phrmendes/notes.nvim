@@ -30,19 +30,7 @@ function M.create(title, tags, path)
 		table.insert(lines, "")
 	end
 
-	local content = table.concat(lines, "\n") .. "\n"
-	local fd = vim.uv.fs_open(full_path, "w", 420)
-	if not fd then
-		vim.notify("Failed to create note: could not open file", vim.log.levels.ERROR)
-		return nil
-	end
-
-	vim.uv.fs_write(fd, content)
-	vim.uv.fs_close(fd)
-
-	vim.cmd("edit " .. full_path)
-
-	return full_path
+	return utils.write_markdown_file(full_path, lines, "note")
 end
 
 return M
