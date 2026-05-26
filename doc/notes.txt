@@ -15,7 +15,7 @@ SETUP                                                              *notes.setup(
 Setup function
 
 Parameters ~
-{opts} `(table | nil)` Configuration options
+{opts} `(UserConfig | nil)` Configuration options
 
   {path}   `(string)`  Path to the notes directory (default: ~/Documents/notes)
   {picker} `(string)`  Picker backend: "native", or "mini"

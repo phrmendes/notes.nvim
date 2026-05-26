@@ -37,18 +37,18 @@ vim
 	end)
 
 T["generate_id"] = new_set()
-
-T["generate_id"]["generates correct length char id"] = function()
-	local id = utils.generate_id(4, true)
-	eq(#id, 4)
-	eq(id:match("^[A-Z]+$") ~= nil, true)
-end
-
-T["generate_id"]["generates correct length digit id"] = function()
-	local id = utils.generate_id(6)
-	eq(#id, 6)
-	eq(id:match("^[0-9]+$") ~= nil, true)
-end
+vim
+	.iter({
+		{ "generates correct length char id", 4, true, 4, "^[A-Z]+$" },
+		{ "generates correct length digit id", 6, false, 6, "^[0-9]+$" },
+	})
+	:each(function(case)
+		T["generate_id"][case[1]] = function()
+			local id = utils.generate_id(case[2], case[3])
+			eq(#id, case[4])
+			eq(id:match(case[5]) ~= nil, true)
+		end
+	end)
 
 T["generate_id"]["generates different ids each time"] = function()
 	local id1 = utils.generate_id(4, true)

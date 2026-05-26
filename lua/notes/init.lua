@@ -12,7 +12,7 @@ local picker = require("notes.picker")
 local M = {}
 
 --- Setup function
----@param opts table | nil Configuration options
+---@param opts UserConfig | nil Configuration options
 function M.setup(opts)
 	config.setup(opts)
 end
