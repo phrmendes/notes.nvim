@@ -19,18 +19,19 @@ A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/
 
 ## Installation
 
-Clone into Neovim's built-in package directory:
+Add the plugin URL to your `vim.pack.add()` call:
 
-```bash
-git clone --depth=1 https://github.com/phrmendes/notes.nvim \
-  ${XDG_DATA_HOME:-~/.local/share}/nvim/site/pack/plugins/start/notes.nvim
+```lua
+vim.pack.add({
+  "https://github.com/phrmendes/notes.nvim",
+})
 ```
 
 ## Setup
 
 ```lua
 require("notes").setup({
-  path = vim.env.HOME .. "/Documents/notes",
+  path = vim.fs.joinpath(vim.env.HOME, "Documents", "notes"),
   -- picker = "native",  -- or "mini", auto-detected if omitted
 })
 
