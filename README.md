@@ -19,42 +19,36 @@ A simple note-taking plugin for Neovim, inspired by [denote](https://github.com/
 
 ## Installation
 
-Using vim.pack:
+Clone into Neovim's built-in package directory:
 
-```lua
--- ~/.config/nvim/lua/plugins.lua or your plugin specification file
-vim.pack.add("phrmendes/notes.nvim", {
-  config = function()
-    require("notes").setup({
-      path = vim.env.HOME .. "/Documents/notes",
-      -- picker = "native",  -- or "mini", auto-detected if omitted
-    })
-  end,
-  keys = {
-    { "<leader>nn", function() require("notes").new() end, desc = "New note" },
-    { "<leader>ns", function() require("notes").search() end, desc = "Search notes" },
-    { "<leader>n/", function() require("notes").grep() end, desc = "Grep notes" },
-  },
-})
+```bash
+git clone --depth=1 https://github.com/phrmendes/notes.nvim \
+  ${XDG_DATA_HOME:-~/.local/share}/nvim/site/pack/plugins/start/notes.nvim
 ```
 
 ## Setup
 
 ```lua
 require("notes").setup({
-  path = vim.env.HOME .. "/Documents/notes",  -- Notes directory
-  -- picker = "mini",  -- optional: "native" (vim.ui) or "mini" (mini.pick), auto-detected if omitted
+  path = vim.env.HOME .. "/Documents/notes",
+  -- picker = "native",  -- or "mini", auto-detected if omitted
 })
+
+-- Suggested keybindings
+vim.keymap.set("n", "<leader>nn", function() require("notes").new() end, { desc = "New note" })
+vim.keymap.set("n", "<leader>ns", function() require("notes").search() end, { desc = "Search notes" })
+vim.keymap.set("n", "<leader>n/", function() require("notes").grep() end, { desc = "Grep notes" })
+vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { desc = "Journal" })
 ```
 
 ### Configuration
 
-| Option | Default | Description |
-|---|---|---|
-| `path` | `~/Documents/notes` | Directory to store notes |
-| `picker` | auto-detected | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
-| `journal.path` | `{path}/journal` | Directory to store journal entries |
-| `journal.title_format` | `"%Y-%m-%d"` | `os.date` format for journal entry heading |
+| Option                 | Default             | Description                                                 |
+| ---------------------- | ------------------- | ----------------------------------------------------------- |
+| `path`                 | `~/Documents/notes` | Directory to store notes                                    |
+| `picker`               | auto-detected       | Picker backend: `"native"` (vim.ui) or `"mini"` (mini.pick) |
+| `journal.path`         | `{path}/journal`    | Directory to store journal entries                          |
+| `journal.title_format` | `"%Y-%m-%d"`        | `os.date` format for journal entry heading                  |
 
 ### Picker Auto-detection
 
@@ -64,15 +58,6 @@ When `picker` is not specified, auto-detection happens once at plugin load:
 - Otherwise → uses native `vim.ui.select`
 
 ## Usage
-
-### Keybindings (suggested)
-
-```lua
-vim.keymap.set("n", "<leader>nn", function() require("notes").new() end, { desc = "New note" })
-vim.keymap.set("n", "<leader>ns", function() require("notes").search() end, { desc = "Search notes" })
-vim.keymap.set("n", "<leader>n/", function() require("notes").grep() end, { desc = "Grep notes" })
-vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { desc = "Journal" })
-```
 
 ### Commands
 
