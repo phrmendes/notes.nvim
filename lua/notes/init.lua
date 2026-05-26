@@ -1,7 +1,7 @@
 ---
 --- A simple note taking plugin for neovim.
 ---
---- MIT License Copyright (c) 2024 Pedro Mendes
+--- Apache-2.0 License Copyright (c) 2024 Pedro Mendes
 ---
 
 local config = require("notes.config")
@@ -71,11 +71,12 @@ vim.api.nvim_create_user_command("Notes", function(opts)
 	local sub = args[1]
 	local handler = commands[sub]
 
-	if handler then
-		handler(args)
-	else
+	if not handler then
 		vim.notify("Unknown Notes command: " .. (sub or ""), vim.log.levels.ERROR)
+		return
 	end
+
+	handler(args)
 end, {
 	nargs = "*",
 	desc = "Notes commands: " .. table.concat(vim.tbl_keys(commands), ", "),

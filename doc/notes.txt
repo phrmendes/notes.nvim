@@ -1,6 +1,6 @@
 A simple note taking plugin for neovim.
 
-MIT License Copyright (c) 2024 Pedro Mendes
+Apache-2.0 License Copyright (c) 2024 Pedro Mendes
 
 ================================================================================
 NOTES.NVIM                                                        *notes.nvim*

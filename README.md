@@ -105,4 +105,4 @@ just test_file tests/test_integration.lua
 
 ## License
 
-MIT License Copyright (c) 2024 Pedro Mendes
+Apache-2.0 License Copyright (c) 2024 Pedro Mendes
