@@ -75,6 +75,11 @@ vim
 	.iter({
 		{ "parses valid YYYY-MM-DD", "2026-01-15", true },
 		{ "returns nil for invalid format", "2026/01/15", false },
+		{ "returns nil for Feb 30", "2026-02-30", false },
+		{ "returns nil for Apr 31", "2026-04-31", false },
+		{ "returns nil for month 13", "2026-13-01", false },
+		{ "returns nil for month 0", "2026-00-01", false },
+		{ "returns nil for day 0", "2026-01-00", false },
 	})
 	:each(function(case)
 		T["parse_date"][case[1]] = function()
@@ -82,5 +87,39 @@ vim
 			eq((result ~= nil), case[3])
 		end
 	end)
+
+T["mkdirp"] = new_set()
+
+T["mkdirp"]["returns true when creating new directory"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+
+	local result = utils.mkdirp(vim.fs.joinpath(temp_dir, "fresh"))
+	eq(result, true)
+	eq(vim.uv.fs_stat(vim.fs.joinpath(temp_dir, "fresh")) ~= nil, true)
+end
+
+T["mkdirp"]["returns false when directory already exists"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+
+	local result = utils.mkdirp(temp_dir)
+	eq(result, false)
+end
+
+T["mkdirp"]["creates nested parent directories"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+	local deep = vim.fs.joinpath(temp_dir, "a", "b", "c")
+
+	utils.mkdirp(deep)
+
+	eq(vim.uv.fs_stat(deep) ~= nil, true)
+	eq(vim.uv.fs_stat(vim.fs.dirname(deep)) ~= nil, true)
+	eq(vim.uv.fs_stat(vim.fs.dirname(vim.fs.dirname(deep))) ~= nil, true)
+end
 
 return T

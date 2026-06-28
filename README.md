@@ -39,9 +39,10 @@ With a plugin manager of your choice, install `phrmendes/notes.nvim`.
 
 ## Requirements
 
-- Neovim 0.10+ (for `vim.uv`, `vim.fs`, `vim.system`)
+- Neovim 0.11+ (for `lsp/<server>.lua` runtime discovery)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) (for grep)
 - [mini.pick](https://github.com/echasnovski/mini.nvim) (optional, for the `mini` picker backend)
+- [marksman](https://github.com/artempyanykh/marksman) (optional, for LSP features; auto-formats on save)
 
 ## Development
 

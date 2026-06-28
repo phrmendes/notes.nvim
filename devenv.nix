@@ -3,11 +3,13 @@
 {
   name = "notes";
 
-  packages = with pkgs; [ neovim ];
+  packages = with pkgs; [
+    ripgrep
+    fd
+  ];
 
-  tasks = {
-    "test:run".exec = ''nvim --headless --noplugin -u ./scripts/init.lua -c "lua MiniTest.run()"'';
-    "doc:run".exec =
-      ''nvim --headless --noplugin -u ./scripts/init.lua -c "lua MiniDoc.generate({'lua/notes/init.lua'}, 'doc/notes.txt')"'';
+  scripts = {
+    test.exec = "${pkgs.neovim}/bin/nvim --headless --noplugin -u ./scripts/init.lua -c 'lua MiniTest.run()'";
+    doc.exec = "${pkgs.neovim}/bin/nvim --headless --noplugin -u ./scripts/init.lua -c 'lua MiniDoc.generate({\"lua/notes/init.lua\"}, \"doc/notes.txt\")' -c 'qa!'";
   };
 }

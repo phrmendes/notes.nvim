@@ -84,16 +84,7 @@ function M.mock.select_items(child) return child.lua_get("_G.mocked_select[1]") 
 --- Mock vim.ui.input with a single canned response
 ---@param child MiniTest.child
 ---@param response string
-function M.mock.input(child, response)
-	child.lua(string.format(
-		[[
-		vim.ui.input = function(opts, callback)
-			callback(%q)
-		end
-	]],
-		response
-	))
-end
+function M.mock.input(child, response) M.mock.sequential_input(child, { response }) end
 
 --- Mock vim.ui.input with sequential responses
 ---@param child MiniTest.child
@@ -130,17 +121,55 @@ end
 ---@return string|nil
 function M.mock.notify_message(child) return child.lua_get("_G.mocked_notify[1]") end
 
+--- Mock vim.cmd to capture commands without executing
+---@param child MiniTest.child
+function M.mock.cmd(child)
+	child.lua([[
+		_G.mocked_cmds = {}
+		vim.cmd = function(cmd)
+			table.insert(_G.mocked_cmds, cmd)
+		end
+	]])
+end
+
+--- Get commands captured by mock.cmd
+---@param child MiniTest.child
+---@return string[]
+function M.mock.cmds(child) return child.lua_get("_G.mocked_cmds") or {} end
+
 --- Setup notes configuration in the child process
 ---@param child MiniTest.child
 ---@param path string
 ---@param picker string|nil
 M.setup = function(child, path, picker)
 	local opts = string.format("{ path = %q", path)
-	if picker then
-		opts = opts .. string.format(', picker = "%s"', picker)
-	end
+	if picker then opts = opts .. string.format(', picker = "%s"', picker) end
 	opts = opts .. " }"
 	child.lua(string.format([[require("notes.config").setup(%s)]], opts))
+end
+
+--- Stub mini.pick in the child with a recording mock
+---@param child MiniTest.child
+function M.mock_mini_pick(child)
+	child.lua([[
+		_G.captured_start_name = nil
+		_G.captured_start_items = nil
+		_G.captured_globs = nil
+		_G.captured_cwd = nil
+		package.loaded["mini.pick"] = {
+			start = function(opts)
+				_G.captured_start_name = opts.source.name
+				_G.captured_start_items = opts.source.items
+			end,
+			builtin = {
+				grep_live = function(opts, source_opts)
+					_G.captured_globs = opts.globs
+					_G.captured_cwd = source_opts.source.cwd
+				end,
+			},
+			default_show = function() end,
+		}
+	]])
 end
 
 --- Glob journal entries in the child process

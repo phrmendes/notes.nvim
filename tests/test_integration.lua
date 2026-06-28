@@ -53,4 +53,37 @@ T["integration"]["grep finds note content"] = function()
 	eq(#items > 0, true)
 end
 
+T["integration"]["empty title becomes untitled"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	utils.setup(child, temp_dir, "native")
+
+	utils.mock.sequential_input(child, { "", "" })
+
+	child.lua([[require("notes").new()]])
+
+	local files = child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", temp_dir))
+	eq(#files, 1)
+
+	local content = utils.read_file(child, files[1])
+	eq(content[1], "# untitled")
+end
+
+T[":Notes command"] = new_set()
+
+T[":Notes command"]["search invokes picker.files"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+	utils.create_note_files(child, temp_dir, { ["a.md"] = "x" })
+
+	utils.setup(child, temp_dir, "native")
+	child.lua([[require("notes")]]) -- register the :Notes user command
+	utils.mock.select(child)
+
+	child.lua([[vim.cmd("Notes search")]])
+
+	local items = utils.mock.select_items(child)
+	eq(#items, 1)
+	eq(items[1]:match("a.md") ~= nil, true)
+end
+
 return T

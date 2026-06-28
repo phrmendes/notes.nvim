@@ -16,6 +16,10 @@
 ---   available. Custom backends can be added by writing a module under
 ---   `lua/notes/picker/`.
 ---
+--- - Optional marksman LSP integration. The plugin ships an `lsp/marksman.lua`
+---   config (Neovim 0.11+ auto-discovered). Setup auto-enables it; auto-formats
+---   markdown on save.
+---
 --- # Setup ~
 ---
 --- Call `require('notes').setup({...})` once at startup. All other public
@@ -47,12 +51,17 @@
 ---   :Notes journal 2024-12-25 tag1,tag2
 --- <
 ---
+--- # Requirements ~
+---
+--- Neovim 0.11+ (for `lsp/<server>.lua` runtime discovery, `vim.lsp.enable`).
+---
 --- # Configuration ~
 ---
 --- See |notes.NotesConfig| for the configuration class. Default values:
 ---
 --- - `path` — `~/Documents/notes`
 --- - `picker` — `"native"` (or `"mini"` if `mini.pick` is available)
+--- - `lsp.marksman` — `true` (auto-enable marksman on setup; config in `lsp/marksman.lua`)
 --- - `journal.title_format` — `"%Y-%m-%d"`
 ---
 --- # Picker backends ~
@@ -81,12 +90,14 @@ local notes = {}
 --- {opts} `(UserConfig|nil)` Configuration options
 ---   - {path} `(string)` Notes directory
 ---   - {picker} `(string)` Backend name: "native" or "mini"
+---   - {lsp} `(NotesLspConfig|nil)` LSP settings (auto-enable marksman)
 ---   - {journal} `(NotesJournalConfig|nil)` Journal settings
 ---
 ---@usage >lua
 ---   require('notes').setup({
 ---     path = vim.fs.joinpath(vim.env.HOME, 'Documents', 'notes'),
 ---     picker = 'mini',
+---     lsp = { marksman = true },  -- default
 ---     journal = { title_format = '%d/%m/%Y' },
 ---   })
 --- <

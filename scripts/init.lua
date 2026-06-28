@@ -1,4 +1,5 @@
 vim.opt.runtimepath:append(vim.uv.cwd())
+package.path = vim.fs.joinpath(vim.uv.cwd(), "lua", "?.lua") .. ";" .. vim.fs.joinpath(vim.uv.cwd(), "lua", "?", "init.lua") .. ";" .. package.path
 
 if #vim.api.nvim_list_uis() == 0 then
 	local packages_path = "deps"
@@ -8,14 +9,10 @@ if #vim.api.nvim_list_uis() == 0 then
 		local mini_repo = "https://github.com/echasnovski/mini.nvim"
 		local out = vim.system({ "git", "clone", "--filter=blob:none", mini_repo, mini_path }):wait()
 
-		if out.code ~= 0 then
-			os.exit(1)
-		end
+		if out.code ~= 0 then os.exit(1) end
 	else
 		local out = vim.system({ "git", "-C", mini_path, "pull" }):wait()
-		if out.code ~= 0 then
-			os.exit(1)
-		end
+		if out.code ~= 0 then os.exit(1) end
 	end
 
 	require("mini.test").setup()

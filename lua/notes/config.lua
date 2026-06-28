@@ -9,6 +9,7 @@ local default_picker = pcall(require, "mini.pick") and "mini" or "native"
 local defaults = {
 	path = vim.env.HOME .. "/Documents/notes",
 	picker = default_picker,
+	lsp = { marksman = true },
 	journal = { title_format = "%Y-%m-%d" },
 }
 
@@ -32,14 +33,14 @@ function config.setup(opts)
 
 	config.set_picker(merged.picker)
 
-	if utils.mkdirp(config.path) then
-		vim.notify("Created notes directory at: " .. config.path, vim.log.levels.INFO)
-	end
+	if utils.mkdirp(config.path) then vim.notify("Created notes directory at: " .. config.path, vim.log.levels.INFO) end
 
 	config.journal.path = merged.journal.path or vim.fs.joinpath(config.path, "journal")
 	config.journal.title_format = merged.journal.title_format
 
 	utils.mkdirp(config.journal.path)
+
+	if merged.lsp and merged.lsp.marksman then vim.lsp.enable("marksman") end
 end
 
 --- Swap the active picker at runtime

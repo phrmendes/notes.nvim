@@ -6,6 +6,7 @@
 ---@class UserConfig
 ---@field path string Path to the notes directory
 ---@field picker string Picker backend name
+---@field lsp NotesLspConfig | nil LSP configuration
 ---@field journal NotesJournalConfig | nil Journal configuration
 
 ---@class PickerBackend
@@ -15,3 +16,6 @@
 ---@class NotesJournalConfig
 ---@field path string | nil
 ---@field title_format string
+
+---@class NotesLspConfig
+---@field marksman boolean Auto-enable marksman LSP on setup (default: true)
