@@ -3,13 +3,13 @@
 ---
 
 ---@private
-local M = {}
+local utils = {}
 
 --- Normalizes a word by converting it to lowercase, then replacing accented
 --- their unaccented equivalents, and replacing spaces and non-word characters with hyphens.
 ---@param input string The input to normalize.
 ---@return string normalized_string The normalized input.
-M.normalize = function(input)
+utils.normalize = function(input)
 	local normalized_input = input:lower()
 
 	local replacements = {
@@ -55,7 +55,7 @@ end
 ---@param str string The string to split.
 ---@param sep string The separator to use for splitting the string.
 ---@return string tags A string with tags separated by commas and prefixed with #.
-M.create_tags = function(str, sep)
+utils.create_tags = function(str, sep)
 	local tags = vim.iter(string.gmatch(str, "([^" .. sep .. "]+)")):map(function(i) return "#" .. i:gsub("^%s*(.-)%s*$", "%1") end):totable()
 
 	return table.concat(tags, ", ")
@@ -65,7 +65,7 @@ end
 ---@param n number The length of the string.
 ---@param char? boolean If true, generates random uppercase letters; otherwise, generates random numbers.
 ---@return string random_str A string of random characters or numbers.
-M.generate_id = function(n, char)
+utils.generate_id = function(n, char)
 	local base = char and 65 or 48
 	local offset = char and 25 or 9
 	local chars = {}
@@ -79,21 +79,37 @@ end
 
 --- Generates a file ID with date prefix.
 ---@return string file_id A string in format YYYYMMDDXXXX (date + 4 random uppercase letters)
-M.generate_file_id = function() return os.date("%Y%m%d") .. M.generate_id(4, true) end
+utils.generate_file_id = function() return os.date("%Y%m%d") .. utils.generate_id(4, true) end
 
 --- Parse a YYYY-MM-DD date string into a time value
 ---@param date_string string
 ---@return integer|nil time The date as os.time(), or nil if invalid
-M.parse_date = function(date_string)
+utils.parse_date = function(date_string)
 	local year, month, day = date_string:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
+
 	if not year then
 		return nil
 	end
-	return os.time({
-		year = tonumber(year) or 0,
-		month = tonumber(month) or 0,
-		day = tonumber(day) or 0,
-	})
+
+	local y, m, d = tonumber(year), tonumber(month), tonumber(day)
+
+	if not y or not m or not d then
+		return nil
+	end
+
+	local time = os.time({ year = y, month = m, day = d })
+
+	if not time then
+		return nil
+	end
+
+	local t = os.date("*t", time)
+
+	if t.year ~= y or t.month ~= m or t.day ~= d then
+		return nil
+	end
+
+	return time
 end
 
 --- Write content to disk and open the file
@@ -101,7 +117,7 @@ end
 ---@param lines string[] Content lines
 ---@param label string Human-readable label for error messages
 ---@return string | nil full_path or nil on failure
-M.write_markdown_file = function(full_path, lines, label)
+utils.write_markdown_file = function(full_path, lines, label)
 	local content = table.concat(lines, "\n") .. "\n"
 	local fd = vim.uv.fs_open(full_path, "w", 420)
 
@@ -118,7 +134,7 @@ M.write_markdown_file = function(full_path, lines, label)
 		return nil
 	end
 
-	vim.cmd("edit " .. full_path)
+	utils.edit(full_path)
 
 	return full_path
 end
@@ -126,7 +142,7 @@ end
 --- Create directory and parents if they don't exist
 ---@param path string
 ---@return boolean created Whether a directory was created
-M.mkdirp = function(path)
+utils.mkdirp = function(path)
 	if vim.uv.fs_stat(path) then
 		return false
 	end
@@ -134,11 +150,19 @@ M.mkdirp = function(path)
 	local parent = vim.fs.dirname(path)
 
 	if parent and parent ~= path then
-		M.mkdirp(parent)
+		utils.mkdirp(parent)
 	end
 
 	vim.uv.fs_mkdir(path, 493)
 	return true
 end
 
-return M
+--- Open a file in the current buffer
+---@param path string|nil
+utils.edit = function(path)
+	if path then
+		vim.cmd("edit " .. path)
+	end
+end
+
+return utils

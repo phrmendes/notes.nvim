@@ -6,7 +6,7 @@ local config = require("notes.config")
 local utils = require("notes.utils")
 
 ---@private
-local M = {}
+local journal = {}
 
 --- Resolve a date string to a time value
 ---@param date string | nil
@@ -61,7 +61,7 @@ end
 ---@param date string | nil Date in YYYY-MM-DD format (defaults to today)
 ---@param tags string | nil Comma-separated user tags
 ---@return string | nil The path of the journal entry, or nil if creation failed
-function M.open(date, tags)
+function journal.open(date, tags)
 	local journal_path = config.journal.path
 
 	if not journal_path then
@@ -79,11 +79,11 @@ function M.open(date, tags)
 	local title, path = build_path(time, journal_path)
 
 	if vim.uv.fs_stat(path) then
-		vim.cmd("edit " .. path)
+		utils.edit(path)
 		return path
 	end
 
 	return write_entry(path, title, tags)
 end
 
-return M
+return journal
