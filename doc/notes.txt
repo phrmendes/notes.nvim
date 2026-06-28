@@ -1,214 +1,173 @@
-A simple note taking plugin for neovim.
+*notes.nvim* Note-taking in Neovim
 
 Apache-2.0 License Copyright (c) 2024 Pedro Mendes
 
-================================================================================
-NOTES.NVIM                                                        *notes.nvim*
+Features:
 
-A simple note taking plugin for neovim.
+- Create notes with title and tags. Notes are plain `.md` files named with
+  a date prefix and random 4-letter ID.
 
-================================================================================
-SETUP                                                              *notes.setup()*
+- Daily journal entries with automatic `#journal` tagging. Heading format
+  is configurable via `journal.title_format`.
 
-`notes.setup`({opts})
+- Search notes by filename or live-grep note contents with `ripgrep`.
 
-Setup function
+- Pluggable picker: `vim.ui.select` (default) or `mini.pick` when
+  available. Custom backends can be added by writing a module under
+  `lua/notes/picker/`.
 
-Parameters ~
-{opts} `(UserConfig | nil)` Configuration options
+# Setup ~
 
-  {path}   `(string)`  Path to the notes directory (default: ~/Documents/notes)
-  {picker} `(string)`  Picker backend: "native", or "mini"
-                       (default: auto-detects mini.pick if available)
+Call `require('notes').setup({...})` once at startup. All other public
+functions require setup to have been called first.
 
-================================================================================
-COMMANDS                                                        *notes.commands*
-
-`notes.new`({path})                                            *notes.new()*
-
-Create a new note with title and tags via interactive prompts.
-
-Parameters ~
-{path} `(string | nil)` Optional path to create the note in (defaults to config path)
-
-`notes.search`({path})                                         *notes.search()*
-
-Search for notes (list .md files) using the configured picker.
-
-Parameters ~
-{path} `(string | nil)` Optional path to search in (defaults to config path)
-
-`notes.grep`({path})                                           *notes.grep()*
-
-Live grep in notes (in markdown files) using the configured picker.
-
-Parameters ~
-{path} `(string | nil)` Optional path to grep in (defaults to config path)
-
-`notes.journal`({date}, {tags})                                *notes.journal()*
-
-Open or create a daily journal entry. Journal entries are stored in the journal
-directory (default: {path}/journal) and always include the #journal tag.
-
-Parameters ~
-{date} `(string | nil)` Specific date in YYYY-MM-DD format (defaults to today)
-{tags} `(string | nil)` Comma-separated custom tags (appended to #journal)
-
-Example:
+Usage ~
 >lua
-  require("notes").journal()                    -- today's entry
-  require("notes").journal("2026-05-25")        -- specific date
-  require("notes").journal(nil, "work, daily")  -- with custom tags
-<
-
-`notes.register_picker`({name}, {backend})                     *notes.register_picker()*
-
-Register a custom picker backend.
-
-Use this to add support for pickers beyond the built-in "native" and "mini".
-The backend must provide `files(dir)` and `grep(dir)` functions.
-
-Parameters ~
-{name} `(string)` Backend name (used as picker value in setup)
-{backend} `(table)` Backend with .files(dir) and .grep(dir) methods
-
-Example:
->lua
-  require("notes").register_picker("fzf", {
-    files = function(dir)
-      -- Your implementation
-    end,
-    grep = function(dir)
-      -- Your implementation
-    end,
+  require('notes').setup({
+    path = vim.fs.joinpath(vim.env.HOME, 'Documents', 'notes'),
   })
-  require("notes").setup({ picker = "fzf" })
 <
 
-`:Notes` {subcommand} [{args}]                               *:Notes*
+# Usage ~
 
-Create, search, grep, or journal notes from the command line.
+After setup, use the public functions or the `:Notes` user command:
 
-Subcommands:
-  `new`     – prompts for title and tags, then creates a note
-  `search`  – lists .md files with the configured picker
-  `grep`    – prompts for a pattern and greps note contents
-  `journal` – opens today's journal entry (creates if absent)
+>lua
+  require('notes').new()           -- create a note
+  require('notes').journal()       -- open today's journal entry
+  require('notes').search()        -- search by filename
+  require('notes').grep()          -- grep note contents
+<
 
-For `journal`, optional arguments can follow:
+Or from the command line:
+
 >vim
-  :Notes journal                    " today's entry
-  :Notes journal 2026-05-25        " specific date
-  :Notes journal 2026-05-25 job    " with custom tags (#journal always present)
+  :Notes new
+  :Notes search
+  :Notes grep
+  :Notes journal 2024-12-25 tag1,tag2
 <
-================================================================================
-CONFIGURATION CLASS                                              *notes.NotesConfig*
 
-`NotesConfig`
+# Configuration ~
 
-Configuration table structure.
+See |notes.NotesConfig| for the configuration class. Default values:
 
-Fields ~
-{path} `(string)` Path to the notes directory
-{picker} `"native"` | `"mini"` Resolved picker backend
-{journal} `(table)` Journal configuration subtable
-  {path} `(string)` Journal directory (default: {path}/journal)
-  {title_format} `(string)` os.date format for journal heading (default: "%Y-%m-%d")
+- `path` — `~/Documents/notes`
+- `picker` — `"native"` (or `"mini"` if `mini.pick` is available)
+- `journal.title_format` — `"%Y-%m-%d"`
 
-The picker is auto-detected once at plugin load when not explicitly specified.
-Custom backends can be registered using |notes.register_picker()|.
+# Picker backends ~
 
-================================================================================
-NOTE NAMING CONVENTION                                    *notes.note-naming*
+The active picker is a `PickerBackend` table with `files(items, dir, on_choice)`
+and `grep(dir, glob, on_choice)` methods. Notes.nvim handles file opening;
+backends only deal with display and selection.
 
-Notes are saved as: `YYYYMMDDXXXX-title.md`
+Built-in: `native` (vim.ui), `mini` (mini.pick). To add a new backend,
+create a module under `lua/notes/picker/` and require it from
+`lua/notes/picker/init.lua`.
 
-- `YYYYMMDD` – creation date
-- `XXXX` – random 4-character ID (prevents collisions)
-- `title` – normalized title (lowercase, accented → plain, spaces → hyphens,
-  special characters removed)
+------------------------------------------------------------------------------
+                                                                 *notes.setup()*
+                             `notes.setup`({opts})
+Setup the plugin
 
-Empty title becomes `"untitled"` – filename `YYYYMMDDXXXX-untitled.md`.
+Must be called once before any other public function. Creates the notes
+directory, resolves the picker backend, and sets the journal directory.
 
-Example: `20250124ABCD-my-meeting-notes.md`
+Parameters ~
+{opts} `(UserConfig|nil)` Configuration options
+  - {path} `(string)` Notes directory
+  - {picker} `(string)` Backend name: "native" or "mini"
+  - {journal} `(NotesJournalConfig|nil)` Journal settings
 
-================================================================================
-JOURNAL NAMING CONVENTION                                *notes.journal-naming*
-
-Journal entries are saved as: `YYYYMMDD.md`
-
-The filename is always `YYYYMMDD.md` (non-configurable). The heading format is
-customizable via `journal.title_format` (default: `%Y-%m-%d`), which accepts any
-|os.date()| format string.
-
-Examples:
+Usage ~
 >lua
-  require("notes").setup({
-    journal = { title_format = "%d/%m/%Y" }   -- heading: # DD/MM/YYYY
+  require('notes').setup({
+    path = vim.fs.joinpath(vim.env.HOME, 'Documents', 'notes'),
+    picker = 'mini',
+    journal = { title_format = '%d/%m/%Y' },
   })
 <
+------------------------------------------------------------------------------
+                                                                   *notes.new()*
+                              `notes.new`({path})
+Create a new note
 
-The `#journal` tag is always included. Additional tags can be supplied when
-calling |notes.journal()|.
+Prompts for title and tags interactively, then creates the note and opens
+it. Empty title becomes "untitled".
 
-================================================================================
-TESTING                                                          *notes.testing*
+Parameters ~
+{path} `(string|nil)` Directory to create the note in (defaults to config path)
 
-Run all tests:
->bash
-  just test
+Usage ~
+>lua
+  require('notes').new()  -- uses configured notes path
+  require('notes').new('/some/other/dir')
 <
+------------------------------------------------------------------------------
+                                                               *notes.journal()*
+                        `notes.journal`({date}, {tags})
+Open or create a journal entry
 
-Run a specific test file:
->bash
-  just test_file tests/test_utils.lua
-  just test_file tests/test_note.lua
-  just test_file tests/test_picker.lua
-  just test_file tests/test_integration.lua
-  just test_file tests/test_journal.lua
+Journal entries are stored in `{path}/journal/` (configurable) and always
+include the `#journal` tag. Opens existing entry for the date or creates
+a new one.
+
+Parameters ~
+{date} `(string|nil)` Date in YYYY-MM-DD format (defaults to today)
+{tags} `(string|nil)` Comma-separated tags appended to #journal
+
+Usage ~
+>lua
+  require('notes').journal()                  -- today
+  require('notes').journal('2024-12-25')      -- specific date
+  require('notes').journal(nil, 'work, ideas')  -- today with custom tags
 <
+------------------------------------------------------------------------------
+                                                                *notes.search()*
+                             `notes.search`({path})
+Search notes by filename
 
-Tests use |mini.test|. Requirements: Neovim 0.10+, |just| (command runner).
-mini.nvim is auto-downloaded by the test runner.
-
-================================================================================
-UTILITIES                                                      *notes.utilities*
-
-`utils.normalize`({input})                                     *M.normalize()*
-
-Normalizes a word by converting to lowercase, replacing accented characters,
-and replacing spaces/non-word characters with hyphens.
+Lists all `.md` files in the notes directory using the configured picker.
+Selecting a file opens it.
 
 Parameters ~
-{input} `(string)` The input to normalize.
-Return ~
-`(string)` normalized_string The normalized input.
+{path} `(string|nil)` Directory to search in (defaults to config path)
 
-`utils.create_tags`({str}, {sep})                              *M.create_tags()*
+Usage ~
+>lua
+  require('notes').search()
+<
+------------------------------------------------------------------------------
+                                                                  *notes.grep()*
+                              `notes.grep`({path})
+Grep note contents
 
-Creates a string of tags from a string.
-
-Parameters ~
-{str} `(string)` The string to split.
-{sep} `(string)` The separator to use for splitting the string.
-Return ~
-`(string)` tags A string with tags separated by commas and prefixed with #.
-
-`utils.generate_id`({n}, {char})                               *M.generate_id()*
-
-Generates a random string of characters or numbers.
+Prompts for a pattern (or live-updates with mini.pick) and shows matching
+lines. Selecting a match opens the file at the line number.
 
 Parameters ~
-{n} `(number)` The length of the string.
-{char} `(optional)` `(boolean)` If true, generates random uppercase letters.
-Return ~
-`(string)` random_str A string of random characters or numbers.
+{path} `(string|nil)` Directory to search in (defaults to config path)
 
-`utils.generate_file_id`()                                     *M.generate_file_id()*
+Usage ~
+>lua
+  require('notes').grep()
+<
+------------------------------------------------------------------------------
+                                                            *notes.set_picker()*
+                           `notes.set_picker`({name})
+Swap the active picker at runtime
 
-Generates a file ID with date prefix.
+Changes the backend used by subsequent `search()` and `grep()` calls
+without requiring re-calling `setup()`.
 
-Return ~
-`(string)` file_id A string in format YYYYMMDDXXXX (date + 4 random uppercase letters).
+Parameters ~
+{name} `(string)` Backend name: "native" or "mini"
+
+Usage ~
+>lua
+  require('notes').set_picker('mini')
+  require('notes').set_picker('native')
+<
 
  vim:tw=78:ts=8:noet:ft=help:norl:
