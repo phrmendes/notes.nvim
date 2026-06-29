@@ -42,6 +42,10 @@ local function save_category(name, data)
 	vim.fn.writefile({ encoded }, vim.fs.joinpath(ltex_path, name .. ".json"))
 end
 
+---@param client vim.lsp.Client
+---@param settings LtexSettings
+local function notify_settings(client, settings) client:notify("workspace/didChangeConfiguration", { settings = settings }) end
+
 --- Append items to a persisted category and update the in-memory settings.
 ---@param category string Settings key (e.g. "dictionary")
 ---@param lang string Language code
@@ -75,13 +79,13 @@ return {
 		vim.iter(methods):each(function(cmd, spec)
 			vim.lsp.commands[cmd] = function(command)
 				vim.iter(command.arguments[1][spec.arg_key]):each(function(lang, items) persist(spec.setting, lang, items, settings) end)
-				client:notify("workspace/didChangeConfiguration", { settings = settings })
+				notify_settings(client, settings)
 			end
 		end)
 
 		vim.lsp.commands["_ltex.spellCheck"] = function()
 			settings.spellCheck = not settings.spellCheck
-			client:notify("workspace/didChangeConfiguration", { settings = settings })
+			notify_settings(client, settings)
 		end
 
 		vim.lsp.commands["_ltex.pickLanguage"] = function()
@@ -89,7 +93,7 @@ return {
 				vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
 					if not lang or lang == "" then return end
 					settings.language = lang
-					client:notify("workspace/didChangeConfiguration", { settings = settings })
+					notify_settings(client, settings)
 				end)
 				return
 			end
@@ -100,7 +104,7 @@ return {
 				if not choice then return end
 				local lang = choice:gsub(vim.pesc(current_lang_mark) .. "$", "")
 				settings.language = lang
-				client:notify("workspace/didChangeConfiguration", { settings = settings })
+				notify_settings(client, settings)
 			end)
 		end
 
@@ -116,7 +120,7 @@ return {
 			client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
 		end
 
-		client:notify("workspace/didChangeConfiguration", { settings = settings })
+		notify_settings(client, settings)
 	end,
 	settings = {
 		ltex = {
