@@ -9,7 +9,7 @@ local default_picker = pcall(require, "mini.pick") and "mini" or "native"
 local defaults = {
 	path = vim.env.HOME .. "/Documents/notes",
 	picker = default_picker,
-	lsp = { marksman = true },
+	lsp = { marksman = true, ltex_plus = true },
 	journal = { title_format = "%Y-%m-%d" },
 }
 
@@ -40,7 +40,10 @@ function config.setup(opts)
 
 	utils.mkdirp(config.journal.path)
 
-	if merged.lsp and merged.lsp.marksman then vim.lsp.enable("marksman") end
+	if merged.lsp then
+		if merged.lsp.marksman then vim.lsp.enable("marksman") end
+		if merged.lsp.ltex_plus then vim.lsp.enable("ltex_plus") end
+	end
 end
 
 --- Swap the active picker at runtime

@@ -87,27 +87,19 @@ utils.generate_file_id = function() return os.date("%Y%m%d") .. utils.generate_i
 utils.parse_date = function(date_string)
 	local year, month, day = date_string:match("^(%d%d%d%d)-(%d%d)-(%d%d)$")
 
-	if not year then
-		return nil
-	end
+	if not year then return nil end
 
 	local y, m, d = tonumber(year), tonumber(month), tonumber(day)
 
-	if not y or not m or not d then
-		return nil
-	end
+	if not y or not m or not d then return nil end
 
 	local time = os.time({ year = y, month = m, day = d })
 
-	if not time then
-		return nil
-	end
+	if not time then return nil end
 
 	local t = os.date("*t", time)
 
-	if t.year ~= y or t.month ~= m or t.day ~= d then
-		return nil
-	end
+	if t.year ~= y or t.month ~= m or t.day ~= d then return nil end
 
 	return time
 end
@@ -143,26 +135,53 @@ end
 ---@param path string
 ---@return boolean created Whether a directory was created
 utils.mkdirp = function(path)
-	if vim.uv.fs_stat(path) then
-		return false
-	end
+	if vim.uv.fs_stat(path) then return false end
 
 	local parent = vim.fs.dirname(path)
 
-	if parent and parent ~= path then
-		utils.mkdirp(parent)
-	end
+	if parent and parent ~= path then utils.mkdirp(parent) end
 
 	vim.uv.fs_mkdir(path, 493)
 	return true
 end
 
 --- Open a file in the current buffer
+---
+--- Handles two common cases that would otherwise prompt the user:
+---
+--- 1. A stale `.swp` file from a previous Neovim session (E13: "File
+---    exists and is not a new version"). This happens when the file
+---    was modified externally between sessions — the plugin writes
+---    files via `fs_open` after the user has typed the title, which
+---    makes any swap file from a prior crash definitively stale.
+---
+--- 2. The file is already loaded in another buffer (W13: "File has
+---    changed since editing started"). In that case we switch to the
+---    existing buffer and trigger a reload check.
+---
 ---@param path string|nil
-utils.edit = function(path)
-	if path then
-		vim.cmd("edit " .. path)
+---@param lnum number|nil Line number to position the cursor at
+utils.edit = function(path, lnum)
+	if not path then return end
+
+	-- If a buffer is already loaded for this path, switch to it and
+	-- reload from disk to pick up our just-written content.
+	local bufnr = vim.fn.bufnr(path)
+	if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
+		vim.api.nvim_set_current_buf(bufnr)
+		pcall(vim.cmd, "checktime")
+		if lnum then vim.api.nvim_win_set_cursor(0, { lnum, 0 }) end
+		return
 	end
+
+	-- No loaded buffer. Use `silent! edit!` to suppress swap-file
+	-- prompts and force-reload from disk. The file was either just
+	-- written by us (definitely newer than any swap) or already
+	-- existed (in which case `edit!` reloads it cleanly).
+	local cmd = "silent! edit!"
+	if lnum then cmd = cmd .. " +" .. lnum end
+	cmd = cmd .. " " .. path
+	pcall(vim.cmd, cmd)
 end
 
 return utils

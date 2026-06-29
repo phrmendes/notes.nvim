@@ -20,9 +20,7 @@ end
 ---@param pattern string
 ---@return string[]|nil Lines in "file:lnum:text" format, or nil on error
 utils.rg = function(dir, glob, pattern)
-	if not pattern or pattern == "" then
-		return nil
-	end
+	if not pattern or pattern == "" then return nil end
 
 	local obj = vim.system({ "rg", "-n", "--no-heading", "-F", "--color=never", "--glob", glob, pattern, dir }, { text = true }):wait()
 
@@ -54,9 +52,7 @@ utils.get_picker = function() return require("notes.config").picker or require("
 --- Override via `require("notes.picker").on_choice` to change how notes are opened.
 ---@param choice string|nil
 utils.on_choice = function(choice)
-	if not choice then
-		return
-	end
+	if not choice then return end
 
 	local parts = vim.split(choice, ":")
 	local lnum = tonumber(parts[2] or "")
@@ -66,7 +62,10 @@ utils.on_choice = function(choice)
 		return
 	end
 
-	vim.cmd("edit +" .. lnum .. " " .. parts[1])
+	-- Open the file with the cursor at the matched line, going through
+	-- utils.edit so the swap-file and buffer-reload handling is applied
+	-- uniformly.
+	require("notes.utils").edit(parts[1], lnum)
 end
 
 return utils

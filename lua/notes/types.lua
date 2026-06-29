@@ -19,3 +19,4 @@
 
 ---@class NotesLspConfig
 ---@field marksman boolean Auto-enable marksman LSP on setup (default: true)
+---@field ltex_plus boolean Auto-enable ltex-ls-plus LSP on setup (default: true)

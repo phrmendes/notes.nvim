@@ -5,7 +5,7 @@
 --- Features:
 ---
 --- - Create notes with title and tags. Notes are plain `.md` files named with
----   a date prefix and random 4-letter ID.
+---   a date prefix and random 4-letter ID. Empty titles become "untitled".
 ---
 --- - Daily journal entries with automatic `#journal` tagging. Heading format
 ---   is configurable via `journal.title_format`.
@@ -16,9 +16,18 @@
 ---   available. Custom backends can be added by writing a module under
 ---   `lua/notes/picker/`.
 ---
---- - Optional marksman LSP integration. The plugin ships an `lsp/marksman.lua`
----   config (Neovim 0.11+ auto-discovered). Setup auto-enables it; auto-formats
----   markdown on save.
+--- - Optional marksman LSP integration via `lsp/marksman.lua`. Auto-loaded
+---   by Neovim 0.11+ runtime discovery; `setup()` auto-enables it.
+---
+--- - Optional ltex-ls-plus integration via `lsp/ltex_plus.lua`. Grammar and
+---   spelling checker for markdown, tex, and typst. Dictionaries, disabled
+---   rules, and hidden false positives are persisted as JSON in
+---   `~/.local/share/nvim/ltex/`. All functionality is exposed through the
+---   LSP — diagnostics, code actions, and `_ltex.*` commands — with no
+---   plugin-side user commands or keymaps. For a richer feature set
+---   (statusline, UI, scope management), see
+---   [ltex_extra.nvim](https://github.com/barreiroleo/ltex_extra.nvim) which
+---   builds on the same LSP server.
 ---
 --- # Setup ~
 ---
@@ -33,13 +42,14 @@
 ---
 --- # Usage ~
 ---
---- After setup, use the public functions or the `:Notes` user command:
+--- Public functions:
 ---
 --- >lua
----   require('notes').new()           -- create a note
----   require('notes').journal()       -- open today's journal entry
----   require('notes').search()        -- search by filename
----   require('notes').grep()          -- grep note contents
+---   require('notes').new()               -- create a note
+---   require('notes').journal()           -- open today's journal entry
+---   require('notes').search()            -- search by filename
+---   require('notes').grep()              -- grep note contents
+---   require('notes').set_picker('mini')  -- swap picker at runtime
 --- <
 ---
 --- Or from the command line:
@@ -53,26 +63,159 @@
 ---
 --- # Requirements ~
 ---
---- Neovim 0.11+ (for `lsp/<server>.lua` runtime discovery, `vim.lsp.enable`).
+--- - Neovim 0.11+ (for `lsp/<server>.lua` runtime discovery and
+---   `vim.lsp.enable`)
+--- - [ripgrep](https://github.com/BurntSushi/ripgrep) (for grep)
+---
+--- # Optional ~
+---
+--- - [mini.pick](https://github.com/echasnovski/mini.nvim) — for the `mini`
+---   picker backend
+--- - [marksman](https://github.com/artempyanykh/marksman) — for markdown LSP
+---   features
+--- - [ltex-ls-plus](https://github.com/ltex-plus/ltex-ls-plus) — for grammar
+---   and spelling checks
 ---
 --- # Configuration ~
 ---
---- See |notes.NotesConfig| for the configuration class. Default values:
+--- All options are passed to `setup({...})`. The full configuration class:
+---
+--- >lua
+---   ---@class UserConfig
+---   ---@field path string Notes directory
+---   ---@field picker string Picker backend name: "native" or "mini"
+---   ---@field lsp NotesLspConfig|nil LSP configuration
+---   ---@field journal NotesJournalConfig|nil Journal configuration
+--- <
+---
+--- Default values:
 ---
 --- - `path` — `~/Documents/notes`
 --- - `picker` — `"native"` (or `"mini"` if `mini.pick` is available)
---- - `lsp.marksman` — `true` (auto-enable marksman on setup; config in `lsp/marksman.lua`)
+--- - `lsp.marksman` — `true` (auto-enable marksman)
+--- - `lsp.ltex_plus` — `true` (auto-enable ltex-ls-plus)
 --- - `journal.title_format` — `"%Y-%m-%d"`
+---
+---@usage >lua
+---   require('notes').setup({
+---     path = vim.fs.joinpath(vim.env.HOME, 'Documents', 'notes'),
+---     picker = 'mini',
+---     lsp = {
+---       marksman = true,    -- disable with `false`
+---       ltex_plus = false,  -- only enable what you have installed
+---     },
+---     journal = { title_format = '%d/%m/%Y' },
+---   })
+--- <
 ---
 --- # Picker backends ~
 ---
---- The active picker is a `PickerBackend` table with `files(items, dir, on_choice)`
---- and `grep(dir, glob, on_choice)` methods. Notes.nvim handles file opening;
---- backends only deal with display and selection.
+--- The active picker is a `PickerBackend` table with two methods:
+--- `files(items, dir, on_choice)` and `grep(dir, glob, on_choice)`. The
+--- plugin handles file opening; backends only deal with display and
+--- selection.
 ---
---- Built-in: `native` (vim.ui), `mini` (mini.pick). To add a new backend,
---- create a module under `lua/notes/picker/` and require it from
---- `lua/notes/picker/init.lua`.
+--- - `"native"` — uses `vim.ui.select` (the default)
+--- - `"mini"` — uses `mini.pick` (live grep, icons, etc.)
+--- - Custom — write a module at `lua/notes/picker/<name>.lua` with
+---   `files` and `grep` methods, then use `set_picker("<name>")`
+---
+--- Switch at runtime with `notes.set_picker("name")`.
+---
+--- # LSP integration ~
+---
+--- The plugin ships `lsp/marksman.lua` and `lsp/ltex_plus.lua` at the
+--- project root. Neovim 0.11+ auto-discovers them when you call
+--- `vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`. The
+--- plugin's `setup()` triggers these enables automatically.
+---
+--- ## marksman ~
+---
+--- Markdown LSP — completion, hover, cross-file references, symbols.
+--- Config lives in `lsp/marksman.lua` (8 lines, no client-side handlers).
+--- Use `vim.lsp.buf.format()` to format a buffer manually.
+---
+--- ## ltex-ls-plus ~
+---
+--- Grammar and spelling checker for `.md`, `.tex`, and `.typst`. Three
+--- layers of integration:
+---
+--- 1. **Diagnostics** — free via LSP. Squiggles appear automatically.
+---
+--- 2. **Code actions** — server provides 4 quick fixes (accept suggestion,
+---    add to dictionary, disable rule, hide false positive). The plugin
+---    adds one more: "Pick language" (opens `vim.ui.select` with
+---    `settings.languages`, current language marked `[*]`).
+---
+--- 3. **LSP commands** — registered in `on_attach`:
+---
+---    - `_ltex.addToDictionary` (server) — appends words, persists to JSON
+---    - `_ltex.disableRules` (server) — appends rule IDs, persists
+---    - `_ltex.hideFalsePositives` (server) — appends, persists
+---    - `_ltex.spellCheck` (client) — toggle grammar checking
+---    - `_ltex.pickLanguage` (client) — `vim.ui.select` language picker
+---    - `_ltex.checkDocument` (client) — request re-check
+---
+--- Persisted data lives at `~/.local/share/nvim/ltex/`:
+---
+--- >text
+---   dictionary.json
+---   disabledRules.json
+---   hiddenFalsePositives.json
+--- <
+---
+--- Each file is a JSON object: `{"en-US": ["word1", "word2"], ...}`.
+--- Shared across all note projects — add a word in one notes dir, it's
+--- available everywhere.
+---
+--- # Module structure ~
+---
+--- >text
+---   lua/notes/
+---   ├── init.lua          -- this file: public API + :Notes command
+---   ├── config.lua        -- setup() + set_picker()
+---   ├── types.lua         -- @class definitions (UserConfig, etc.)
+---   ├── utils.lua         -- shared utilities
+---   ├── note.lua          -- note.create()
+---   ├── journal.lua       -- journal.open()
+---   └── picker/           -- picker backends
+---       ├── init.lua      -- orchestrator + get_picker()
+---       ├── utils.lua     -- list_md_files, rg_search, on_choice
+---       ├── native.lua    -- vim.ui backend
+---       └── mini.lua      -- mini.pick backend
+---
+---   lsp/                  -- LSP config files (Neovim 0.11+ auto-discovered)
+---   ├── marksman.lua
+---   └── ltex_plus.lua
+---
+---   scripts/init.lua       -- bootstrap for tests
+---   tests/                 -- mini.test suite (61 cases)
+--- <
+---
+--- # Why no user commands ~
+---
+--- This plugin deliberately exposes no orchestrating code. Notes are
+--- created/edited via the public Lua API or `:Notes` command. Picker
+--- choice, LSP toggles, language switching — all done through LSP
+--- commands, code actions, or the public Lua API.
+---
+--- Users who want keymaps add their own:
+---
+--- >lua
+---   vim.keymap.set("n", "<leader>nn", function() require("notes").new() end, { desc = "Notes: new" })
+---   vim.keymap.set("n", "<leader>ns", function() require("notes").search() end, { desc = "Notes: search" })
+---   vim.keymap.set("n", "<leader>n/", function() require("notes").grep() end, { desc = "Notes: grep" })
+---   vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { desc = "Notes: journal" })
+--- <
+---
+--- # Checkhealth ~
+---
+--- Run `:checkhealth notes` to verify installation:
+---
+--- - Configuration validity
+--- - `marksman` and `ltex-ls-plus` binaries on PATH
+--- - Persisted dictionary sizes
+--- - LSP server attachment status
 
 local config = require("notes.config")
 local journal = require("notes.journal")
@@ -88,16 +231,12 @@ local notes = {}
 ---
 --- Parameters ~
 --- {opts} `(UserConfig|nil)` Configuration options
----   - {path} `(string)` Notes directory
----   - {picker} `(string)` Backend name: "native" or "mini"
----   - {lsp} `(NotesLspConfig|nil)` LSP settings (auto-enable marksman)
----   - {journal} `(NotesJournalConfig|nil)` Journal settings
 ---
 ---@usage >lua
 ---   require('notes').setup({
 ---     path = vim.fs.joinpath(vim.env.HOME, 'Documents', 'notes'),
 ---     picker = 'mini',
----     lsp = { marksman = true },  -- default
+---     lsp = { marksman = true, ltex_plus = true },
 ---     journal = { title_format = '%d/%m/%Y' },
 ---   })
 --- <

@@ -122,9 +122,9 @@ end
 vim
 	.iter({
 		{ name = "returns early on nil", input = nil, expected = {} },
-		{ name = "opens file at line when format is file:lnum:", input = "foo.md:42:matched text", expected = { "edit +42 foo.md" } },
-		{ name = "opens file when format is bare path", input = "just/a/path.md", expected = { "edit just/a/path.md" } },
-		{ name = "path with non-numeric lnum falls back to bare path", input = "foo.md:notanumber:", expected = { "edit foo.md:notanumber:" } },
+		{ name = "opens file at line when format is file:lnum:", input = "foo.md:42:matched text", expected = { "silent! edit! +42 foo.md" } },
+		{ name = "opens file when format is bare path", input = "just/a/path.md", expected = { "silent! edit! just/a/path.md" } },
+		{ name = "path with non-numeric lnum falls back to bare path", input = "foo.md:notanumber:", expected = { "silent! edit! foo.md:notanumber:" } },
 	})
 	:each(function(case)
 		T["on_choice"][case.name] = function()

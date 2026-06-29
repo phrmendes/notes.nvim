@@ -54,7 +54,16 @@ M.new_child_set = function()
 	local child = test.new_child_neovim()
 	local T = test.new_set({
 		hooks = {
-			pre_case = function() child.restart({ "-u", "scripts/init.lua" }) end,
+			pre_case = function()
+				child.restart({ "-u", "scripts/init.lua" })
+				-- Mock the 'helpers' module that ltex_plus.lua requires at load time
+				child.lua([[
+					package.loaded.helpers = {
+						get_dictionary_words = function() return {} end,
+						add_word_to_dictionary = function(_, word) return { word } end,
+					}
+				]])
+			end,
 			post_case = function()
 				local temp_dirs = child.lua_get("vim.fn.glob('/tmp/notes.nvim/test_*', 0, 1)")
 				vim.iter(temp_dirs):each(function(dir) child.lua(string.format("vim.fn.delete(%q, 'rf')", dir)) end)

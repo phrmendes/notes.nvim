@@ -122,4 +122,46 @@ T["mkdirp"]["creates nested parent directories"] = function()
 	eq(vim.uv.fs_stat(vim.fs.dirname(vim.fs.dirname(deep))) ~= nil, true)
 end
 
+T["edit"] = new_set()
+
+T["edit"]["does nothing for nil path"] = function() utils.edit(nil) end
+
+T["edit"]["opens an existing file without prompting on stale swap"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+	local file_path = vim.fs.joinpath(temp_dir, "note.md")
+	vim.fn.writefile({ "# Hello" }, file_path)
+
+	-- Older swap mtime than the disk file is what triggers the E13
+	-- "File exists and is not a new version" prompt in Neovim.
+	local swap_path = vim.fs.joinpath(temp_dir, ".note.md.swp")
+	vim.fn.writefile({ "stale swap content" }, swap_path)
+	local old_time = vim.uv.now() - 3600 * 1000
+	vim.uv.fs_utime(swap_path, old_time, old_time)
+
+	utils.edit(file_path)
+
+	eq(vim.api.nvim_buf_get_name(0), file_path)
+	eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], "# Hello")
+end
+
+T["edit"]["switches to already-loaded buffer and reloads from disk"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+	local file_path = vim.fs.joinpath(temp_dir, "note.md")
+	vim.fn.writefile({ "# Original" }, file_path)
+
+	vim.cmd("edit " .. file_path)
+	eq(vim.api.nvim_buf_get_name(0), file_path)
+
+	vim.fn.writefile({ "# Modified on disk" }, file_path)
+
+	-- Existing buffer should be reused and reloaded from disk so
+	-- the on-disk change is visible to the user.
+	utils.edit(file_path)
+	eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], "# Modified on disk")
+end
+
 return T
