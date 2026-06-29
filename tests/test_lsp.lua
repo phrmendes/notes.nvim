@@ -109,7 +109,6 @@ T["lsp"]["ltex_plus.lua config file is valid"] = function()
 	eq(type(config.settings.ltex), "table")
 	eq(config.settings.ltex.language, "en-US")
 	eq(type(config.settings.ltex.languages), "table")
-	eq(#config.settings.ltex.languages, 3)
 	eq(type(config.settings.ltex.dictionary), "table")
 	eq(config.settings.ltex.spellCheck, true)
 end

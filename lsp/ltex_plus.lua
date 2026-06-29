@@ -119,7 +119,7 @@ return {
 	settings = {
 		ltex = {
 			language = "en-US",
-			languages = { "en-US", "pt-BR", "es-ES" },
+			languages = {},
 			dictionary = {},
 			disabledRules = {},
 			hiddenFalsePositives = {},
