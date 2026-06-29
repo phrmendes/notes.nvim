@@ -75,6 +75,7 @@ return {
 		vim.iter(methods):each(function(cmd, spec)
 			vim.lsp.commands[cmd] = function(command)
 				vim.iter(command.arguments[1][spec.arg_key]):each(function(lang, items) persist(spec.setting, lang, items, settings) end)
+				client:notify("workspace/didChangeConfiguration", { settings = settings })
 			end
 		end)
 
@@ -84,6 +85,15 @@ return {
 		end
 
 		vim.lsp.commands["_ltex.pickLanguage"] = function()
+			if #settings.languages == 0 then
+				vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
+					if not lang or lang == "" then return end
+					settings.language = lang
+					client:notify("workspace/didChangeConfiguration", { settings = settings })
+				end)
+				return
+			end
+
 			local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. current_lang_mark or lang end):totable()
 
 			vim.ui.select(items, { prompt = "Language" }, function(choice)
@@ -104,14 +114,6 @@ return {
 
 			params.uri = params.uri or vim.uri_from_bufnr(bufnr)
 			client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
-		end
-
-		local original_code_action = client.handlers["textDocument/codeAction"] or vim.lsp.handlers["textDocument/codeAction"]
-
-		client.handlers["textDocument/codeAction"] = function(err, result, ctx, config)
-			local actions = original_code_action(err, result, ctx, config) or {}
-			table.insert(actions, { title = "Pick language", command = { command = "_ltex.pickLanguage", arguments = {} } })
-			return actions
 		end
 
 		client:notify("workspace/didChangeConfiguration", { settings = settings })

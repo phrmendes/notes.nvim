@@ -122,4 +122,110 @@ T["lsp"]["ltex_plus uses single_file_support"] = function()
 	eq(config.root_markers, nil)
 end
 
+local function make_client(lsp_config)
+	local client = {
+		config = lsp_config,
+		handlers = {},
+		_notified = {},
+	}
+	function client.notify(_, method, params) table.insert(client._notified, { method = method, params = params }) end
+	function client.request() end
+	return client
+end
+
+local function attach(lsp_config)
+	local client = make_client(lsp_config)
+	lsp_config.on_attach(client, 1)
+	return client
+end
+
+T["lsp"]["addToDictionary sends didChangeConfiguration"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	local client = attach(lsp_config)
+
+	local before = #client._notified
+	vim.lsp.commands["_ltex.addToDictionary"]({ arguments = { { words = { ["en-US"] = { "testword" } } } } })
+
+	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
+	eq(#after_calls > before, true)
+end
+
+T["lsp"]["disableRules sends didChangeConfiguration"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	local client = attach(lsp_config)
+
+	local before = #client._notified
+	vim.lsp.commands["_ltex.disableRules"]({ arguments = { { ruleIds = { ["en-US"] = { "RULE_X" } } } } })
+
+	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
+	eq(#after_calls > before, true)
+end
+
+T["lsp"]["pickLanguage falls back to vim.ui.input when languages is empty"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	attach(lsp_config)
+
+	local input_called = false
+	local select_called = false
+	vim.ui.input = function() input_called = true end
+	vim.ui.select = function() select_called = true end
+
+	vim.lsp.commands["_ltex.pickLanguage"]({})
+
+	eq(input_called, true)
+	eq(select_called, false)
+end
+
+T["lsp"]["pickLanguage uses vim.ui.select when languages is set"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	lsp_config.settings.ltex.languages = { "en-US", "pt-BR" }
+	attach(lsp_config)
+
+	local input_called = false
+	local select_called = false
+	vim.ui.input = function() input_called = true end
+	vim.ui.select = function() select_called = true end
+
+	vim.lsp.commands["_ltex.pickLanguage"]({})
+
+	eq(select_called, true)
+	eq(input_called, false)
+end
+
+T["lsp"]["notes.ltex_pick_language calls _ltex.pickLanguage command"] = function()
+	local called = false
+	vim.lsp.commands["_ltex.pickLanguage"] = function() called = true end
+
+	require("notes").ltex_pick_language()
+
+	eq(called, true)
+end
+
+T["lsp"]["notes.ltex_pick_language warns when command not registered"] = function()
+	vim.lsp.commands["_ltex.pickLanguage"] = nil
+
+	local warned = false
+	local orig = vim.notify
+	vim.notify = function(_, level)
+		if level == vim.log.levels.WARN then warned = true end
+	end
+
+	require("notes").ltex_pick_language()
+
+	vim.notify = orig
+	eq(warned, true)
+end
+
+T["lsp"]["no textDocument/codeAction handler override after on_attach"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	local client = attach(lsp_config)
+
+	eq(client.handlers["textDocument/codeAction"], nil)
+end
+
 return T
