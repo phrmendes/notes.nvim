@@ -82,6 +82,23 @@ T["lsp"]["marksman.lua config file is valid"] = function()
 	eq(config.on_attach, nil)
 end
 
+T["lsp"]["marksman root_dir accepts a bufnr"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "marksman.lua")
+	local config = loadfile(lsp_file)()
+
+	-- Neovim 0.12+ passes a bufnr to root_dir; the function must
+	-- resolve the buffer name and return a string root path.
+	local temp_file = vim.fs.joinpath("/tmp", "notes.nvim", "root_dir_test.md")
+	vim.fn.mkdir("/tmp/notes.nvim", "p")
+	vim.fn.writefile({ "# test" }, temp_file)
+	vim.cmd("edit " .. temp_file)
+	local bufnr = vim.api.nvim_get_current_buf()
+
+	local result = config.root_dir(bufnr)
+	eq(type(result), "string")
+	eq(vim.endswith(result, "notes.nvim"), true)
+end
+
 T["lsp"]["ltex_plus.lua config file is valid"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	eq(vim.uv.fs_stat(lsp_file) ~= nil, true)
@@ -102,6 +119,22 @@ T["lsp"]["ltex_plus.lua config file is valid"] = function()
 	eq(#config.settings.ltex.languages, 3)
 	eq(type(config.settings.ltex.dictionary), "table")
 	eq(config.settings.ltex.spellCheck, true)
+end
+
+T["lsp"]["ltex_plus root_dir accepts a bufnr"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local config = loadfile(lsp_file)()
+
+	-- Neovim 0.12+ passes a bufnr to root_dir; vim.fs.dirname
+	-- requires a string, so the function must resolve via the
+	-- buffer name.
+	local temp_file = vim.fs.joinpath("/tmp", "notes.nvim", "ltex_root.md")
+	vim.fn.writefile({ "# test" }, temp_file)
+	vim.cmd("edit " .. temp_file)
+	local bufnr = vim.api.nvim_get_current_buf()
+
+	local result = config.root_dir(bufnr)
+	eq(type(result), "string")
 end
 
 return T

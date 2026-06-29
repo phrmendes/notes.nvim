@@ -2,5 +2,8 @@ return {
 	cmd = { "marksman", "server" },
 	filetypes = { "markdown" },
 	single_file_support = true,
-	root_dir = function(fname) return vim.fs.root(fname, { ".marksman.toml" }) or vim.fs.dirname(fname) end,
+	root_dir = function(bufnr)
+		local bufname = vim.api.nvim_buf_get_name(bufnr)
+		return vim.fs.root(bufname, { ".marksman.toml" }) or vim.fs.dirname(bufname)
+	end,
 }
