@@ -163,6 +163,61 @@ T["lsp"]["disableRules sends didChangeConfiguration"] = function()
 	eq(#after_calls > before, true)
 end
 
+T["lsp"]["addToDictionary notifies words added"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	attach(lsp_config)
+
+	local notified = {}
+	local orig = vim.notify
+	vim.notify = function(msg) table.insert(notified, msg) end
+
+	vim.lsp.commands["_ltex.addToDictionary"]({ arguments = { { words = { ["en-US"] = { "testword" } } } } })
+
+	vim.notify = orig
+	eq(#notified, 1)
+	eq(notified[1]:find("testword") ~= nil, true)
+end
+
+T["lsp"]["pickLanguage notifies language set via input"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	attach(lsp_config)
+
+	local notified = {}
+	local orig_notify = vim.notify
+	local orig_input = vim.ui.input
+	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.ui.input = function(_, cb) cb("pt-BR") end
+
+	vim.lsp.commands["_ltex.pickLanguage"]({})
+
+	vim.notify = orig_notify
+	vim.ui.input = orig_input
+	eq(#notified, 1)
+	eq(notified[1]:find("pt%-BR") ~= nil, true)
+end
+
+T["lsp"]["pickLanguage notifies language set via select"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	lsp_config.settings.ltex.languages = { "en-US", "pt-BR" }
+	attach(lsp_config)
+
+	local notified = {}
+	local orig_notify = vim.notify
+	local orig_select = vim.ui.select
+	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.ui.select = function(_, _, cb) cb("pt-BR") end
+
+	vim.lsp.commands["_ltex.pickLanguage"]({})
+
+	vim.notify = orig_notify
+	vim.ui.select = orig_select
+	eq(#notified, 1)
+	eq(notified[1]:find("pt%-BR") ~= nil, true)
+end
+
 T["lsp"]["pickLanguage falls back to vim.ui.input when languages is empty"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local lsp_config = loadfile(lsp_file)()

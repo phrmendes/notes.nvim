@@ -11,7 +11,11 @@ local current_lang_mark = " [*]"
 ---@field markdown table Settings for markdown parsing
 
 local methods = {
-	["_ltex.addToDictionary"] = { setting = "dictionary", arg_key = "words" },
+	["_ltex.addToDictionary"] = {
+		setting = "dictionary",
+		arg_key = "words",
+		notify = function(lang, items) vim.notify(string.format("ltex: added to dictionary (%s): %s", lang, table.concat(items, ", ")), vim.log.levels.INFO) end,
+	},
 	["_ltex.disableRules"] = { setting = "disabledRules", arg_key = "ruleIds" },
 	["_ltex.hideFalsePositives"] = { setting = "hiddenFalsePositives", arg_key = "falsePositives" },
 }
@@ -42,9 +46,10 @@ local function save_category(name, data)
 	vim.fn.writefile({ encoded }, vim.fs.joinpath(ltex_path, name .. ".json"))
 end
 
+--- Notify the LSP client of a settings change.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
-local function notify_settings(client, settings) client:notify("workspace/didChangeConfiguration", { settings = settings }) end
+local function notify(client, settings) client:notify("workspace/didChangeConfiguration", { settings = settings }) end
 
 --- Append items to a persisted category and update the in-memory settings.
 ---@param category string Settings key (e.g. "dictionary")
@@ -78,14 +83,17 @@ return {
 
 		vim.iter(methods):each(function(cmd, spec)
 			vim.lsp.commands[cmd] = function(command)
-				vim.iter(command.arguments[1][spec.arg_key]):each(function(lang, items) persist(spec.setting, lang, items, settings) end)
-				notify_settings(client, settings)
+				vim.iter(command.arguments[1][spec.arg_key]):each(function(lang, items)
+					persist(spec.setting, lang, items, settings)
+					if spec.notify then spec.notify(lang, items) end
+				end)
+				notify(client, settings)
 			end
 		end)
 
 		vim.lsp.commands["_ltex.spellCheck"] = function()
 			settings.spellCheck = not settings.spellCheck
-			notify_settings(client, settings)
+			notify(client, settings)
 		end
 
 		vim.lsp.commands["_ltex.pickLanguage"] = function()
@@ -93,7 +101,8 @@ return {
 				vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
 					if not lang or lang == "" then return end
 					settings.language = lang
-					notify_settings(client, settings)
+					vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
+					notify(client, settings)
 				end)
 				return
 			end
@@ -104,7 +113,8 @@ return {
 				if not choice then return end
 				local lang = choice:gsub(vim.pesc(current_lang_mark) .. "$", "")
 				settings.language = lang
-				notify_settings(client, settings)
+				vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
+				notify(client, settings)
 			end)
 		end
 
@@ -120,7 +130,7 @@ return {
 			client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
 		end
 
-		notify_settings(client, settings)
+		notify(client, settings)
 	end,
 	settings = {
 		ltex = {
