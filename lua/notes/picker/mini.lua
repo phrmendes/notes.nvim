@@ -12,12 +12,16 @@ mini.files = function(items, dir, on_choice)
 		return
 	end
 
+	local win = vim.api.nvim_get_current_win()
+
 	pick.start({
 		source = {
 			items = items,
 			name = "Notes",
 			cwd = dir,
-			choose = on_choice,
+			choose = function(item)
+				vim.api.nvim_win_call(win, function() on_choice(item) end)
+			end,
 			show = function(buf_id, items_list, query) pick.default_show(buf_id, items_list, query, { show_icons = true }) end,
 		},
 	})
@@ -34,11 +38,15 @@ mini.grep = function(dir, glob, on_choice)
 		return
 	end
 
+	local win = vim.api.nvim_get_current_win()
+
 	pick.builtin.grep_live({ globs = { glob } }, {
 		source = {
 			name = "Search in notes",
 			cwd = dir,
-			choose = on_choice,
+			choose = function(item)
+				vim.api.nvim_win_call(win, function() on_choice(item) end)
+			end,
 			show = function(buf_id, items_list, query) pick.default_show(buf_id, items_list, query, { show_icons = true }) end,
 		},
 	})

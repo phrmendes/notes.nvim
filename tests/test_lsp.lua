@@ -78,23 +78,19 @@ T["lsp"]["marksman.lua config file is valid"] = function()
 	eq(config.cmd[2], "server")
 	eq(config.filetypes[1], "markdown")
 	eq(config.single_file_support, true)
-	eq(type(config.root_dir), "function")
+	eq(config.root_dir, nil)
+	eq(type(config.root_markers), "table")
 	eq(config.on_attach, nil)
 end
 
-T["lsp"]["marksman root_dir accepts a bufnr"] = function()
+T["lsp"]["marksman uses root_markers"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "marksman.lua")
 	local config = loadfile(lsp_file)()
 
-	local temp_file = vim.fs.joinpath("/tmp", "notes.nvim", "root_dir_test.md")
-	vim.fn.mkdir("/tmp/notes.nvim", "p")
-	vim.fn.writefile({ "# test" }, temp_file)
-	vim.cmd("edit " .. temp_file)
-	local bufnr = vim.api.nvim_get_current_buf()
-
-	local result = config.root_dir(bufnr)
-	eq(type(result), "string")
-	eq(vim.endswith(result, "notes.nvim"), true)
+	eq(type(config.root_markers), "table")
+	eq(vim.tbl_contains(config.root_markers, ".marksman.toml"), true)
+	eq(vim.tbl_contains(config.root_markers, ".git"), true)
+	eq(config.root_dir, nil)
 end
 
 T["lsp"]["ltex_plus.lua config file is valid"] = function()
@@ -108,7 +104,6 @@ T["lsp"]["ltex_plus.lua config file is valid"] = function()
 	eq(config.filetypes[2], "tex")
 	eq(config.filetypes[3], "typst")
 	eq(config.single_file_support, true)
-	eq(type(config.root_dir), "function")
 	eq(type(config.on_attach), "function")
 	eq(type(config.settings), "table")
 	eq(type(config.settings.ltex), "table")
@@ -119,17 +114,13 @@ T["lsp"]["ltex_plus.lua config file is valid"] = function()
 	eq(config.settings.ltex.spellCheck, true)
 end
 
-T["lsp"]["ltex_plus root_dir accepts a bufnr"] = function()
+T["lsp"]["ltex_plus uses single_file_support"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local config = loadfile(lsp_file)()
 
-	local temp_file = vim.fs.joinpath("/tmp", "notes.nvim", "ltex_root.md")
-	vim.fn.writefile({ "# test" }, temp_file)
-	vim.cmd("edit " .. temp_file)
-	local bufnr = vim.api.nvim_get_current_buf()
-
-	local result = config.root_dir(bufnr)
-	eq(type(result), "string")
+	eq(config.single_file_support, true)
+	eq(config.root_dir, nil)
+	eq(config.root_markers, nil)
 end
 
 return T

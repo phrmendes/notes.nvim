@@ -58,7 +58,6 @@ return {
 	cmd = { "ltex-ls-plus" },
 	filetypes = { "markdown", "tex", "typst" },
 	single_file_support = true,
-	root_dir = function(bufnr) return vim.fs.dirname(vim.api.nvim_buf_get_name(bufnr)) end,
 	init_options = {
 		client = "Neovim",
 		customCapabilities = {
