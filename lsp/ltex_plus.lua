@@ -60,9 +60,6 @@ return {
 	single_file_support = true,
 	init_options = {
 		client = "Neovim",
-		customCapabilities = {
-			workspaceSpecificConfiguration = true,
-		},
 	},
 	---@param client vim.lsp.Client
 	---@param bufnr integer Buffer the LSP attached to
