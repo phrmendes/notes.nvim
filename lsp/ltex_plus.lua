@@ -10,7 +10,13 @@ local current_lang_mark = " [*]"
 ---@field spellCheck boolean Whether to perform grammar checks
 ---@field markdown table Settings for markdown parsing
 
-local methods = {
+---@class LtexPersistSpec
+---@field setting string Settings key (e.g. "dictionary")
+---@field arg_key string Command argument key (e.g. "words")
+---@field notify? fun(lang: string, items: string[]) Optional notification after persist
+
+---@type table<string, LtexPersistSpec>
+local persist_specs = {
 	["_ltex.addToDictionary"] = {
 		setting = "dictionary",
 		arg_key = "words",
@@ -55,7 +61,7 @@ local function notify(client, settings) client:notify("workspace/didChangeConfig
 ---@param category string Settings key (e.g. "dictionary")
 ---@param lang string Language code
 ---@param items string[] Items to append to the persisted list
----@param settings table The ltex settings table
+---@param settings LtexSettings
 local function persist(category, lang, items, settings)
 	local existing = settings[category][lang] or {}
 	vim.list_extend(existing, items)
@@ -81,8 +87,43 @@ return {
 			vim.iter(settings.languages):each(function(lang) settings[category][lang] = data[lang] or {} end)
 		end)
 
-		vim.iter(methods):each(function(cmd, spec)
-			vim.lsp.commands[cmd] = function(command)
+		local commands = {
+			["_ltex.spellCheck"] = function()
+				settings.spellCheck = not settings.spellCheck
+				notify(client, settings)
+			end,
+			["_ltex.pickLanguage"] = function()
+				if #settings.languages == 0 then
+					vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
+						if not lang or lang == "" then return end
+						settings.language = lang
+						vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
+						notify(client, settings)
+					end)
+					return
+				end
+				local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. current_lang_mark or lang end):totable()
+				vim.ui.select(items, { prompt = "Language" }, function(choice)
+					if not choice then return end
+					local lang = choice:gsub(vim.pesc(current_lang_mark) .. "$", "")
+					settings.language = lang
+					vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
+					notify(client, settings)
+				end)
+			end,
+			["_ltex.checkDocument"] = function(command)
+				---@class LtexCheckDocumentParams
+				---@field uri? string
+				local params = command.arguments and command.arguments[1]
+				if type(params) ~= "table" then params = {} end
+				---@cast params LtexCheckDocumentParams
+				params.uri = params.uri or vim.uri_from_bufnr(bufnr)
+				client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
+			end,
+		}
+
+		vim.iter(persist_specs):each(function(cmd, spec)
+			commands[cmd] = function(command)
 				vim.iter(command.arguments[1][spec.arg_key]):each(function(lang, items)
 					persist(spec.setting, lang, items, settings)
 					if spec.notify then spec.notify(lang, items) end
@@ -91,44 +132,7 @@ return {
 			end
 		end)
 
-		vim.lsp.commands["_ltex.spellCheck"] = function()
-			settings.spellCheck = not settings.spellCheck
-			notify(client, settings)
-		end
-
-		vim.lsp.commands["_ltex.pickLanguage"] = function()
-			if #settings.languages == 0 then
-				vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
-					if not lang or lang == "" then return end
-					settings.language = lang
-					vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
-					notify(client, settings)
-				end)
-				return
-			end
-
-			local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. current_lang_mark or lang end):totable()
-
-			vim.ui.select(items, { prompt = "Language" }, function(choice)
-				if not choice then return end
-				local lang = choice:gsub(vim.pesc(current_lang_mark) .. "$", "")
-				settings.language = lang
-				vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
-				notify(client, settings)
-			end)
-		end
-
-		vim.lsp.commands["_ltex.checkDocument"] = function(command)
-			---@class LtexCheckDocumentParams
-			---@field uri? string
-
-			local params = command.arguments and command.arguments[1]
-			if type(params) ~= "table" then params = {} end
-			---@cast params LtexCheckDocumentParams
-
-			params.uri = params.uri or vim.uri_from_bufnr(bufnr)
-			client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
-		end
+		vim.iter(commands):each(function(cmd, handler) vim.lsp.commands[cmd] = handler end)
 
 		notify(client, settings)
 	end,
