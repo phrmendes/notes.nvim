@@ -2,7 +2,6 @@
 
 local picker = {}
 
-local edit = require("notes.utils").edit
 local list_md_files = require("notes.picker.utils").list_md_files
 local get_picker = require("notes.picker.utils").get_picker
 local on_choice = require("notes.picker.utils").on_choice
@@ -17,7 +16,7 @@ function picker.files(dir)
 	dir = dir or config.path
 
 	local items = list_md_files(dir)
-	get_picker().files(items, dir, edit)
+	get_picker().files(items, dir, on_choice)
 end
 
 --- Grep in notes
