@@ -98,8 +98,12 @@ return {
 		end
 
 		vim.lsp.commands["_ltex.checkDocument"] = function(command)
+			---@class LtexCheckDocumentParams
+			---@field uri? string
+
 			local params = command.arguments and command.arguments[1]
 			if type(params) ~= "table" then params = {} end
+			---@cast params LtexCheckDocumentParams
 
 			params.uri = params.uri or vim.uri_from_bufnr(bufnr)
 			client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
