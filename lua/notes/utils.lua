@@ -164,8 +164,6 @@ end
 utils.edit = function(path, lnum)
 	if not path then return end
 
-	-- If a buffer is already loaded for this path, switch to it and
-	-- reload from disk to pick up our just-written content.
 	local bufnr = vim.fn.bufnr(path)
 	if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
 		vim.api.nvim_set_current_buf(bufnr)
@@ -174,14 +172,18 @@ utils.edit = function(path, lnum)
 		return
 	end
 
-	-- No loaded buffer. Use `silent! edit!` to suppress swap-file
-	-- prompts and force-reload from disk. The file was either just
-	-- written by us (definitely newer than any swap) or already
-	-- existed (in which case `edit!` reloads it cleanly).
 	local cmd = "silent! edit!"
 	if lnum then cmd = cmd .. " +" .. lnum end
 	cmd = cmd .. " " .. path
 	pcall(vim.cmd, cmd)
+end
+
+---@param item any
+---@return string
+utils.coerce_to_string = function(item)
+	if type(item) == "string" then return item end
+	if vim.islist(item) then return vim.fn.blob2str(item) end
+	return tostring(item)
 end
 
 return utils

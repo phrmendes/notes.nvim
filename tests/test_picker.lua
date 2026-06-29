@@ -89,7 +89,6 @@ end
 T["native files"]["results are sorted alphabetically"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 
-	-- Create in reverse order to verify sort happens regardless of fs order
 	utils.create_note_files(child, temp_dir, {
 		["c.md"] = "c",
 		["a.md"] = "a",
@@ -112,9 +111,9 @@ T["on_choice"] = new_set()
 local capture_on_choice = function(input)
 	utils.mock.cmd(child)
 	if input then
-		child.lua(string.format([[require("notes.picker").on_choice(%q)]], input))
+		child.lua(string.format([[require("notes.picker.utils").on_choice(%q)]], input))
 	else
-		child.lua([[require("notes.picker").on_choice(nil)]])
+		child.lua([[require("notes.picker.utils").on_choice(nil)]])
 	end
 	return utils.mock.cmds(child)
 end

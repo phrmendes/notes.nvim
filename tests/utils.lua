@@ -56,7 +56,6 @@ M.new_child_set = function()
 		hooks = {
 			pre_case = function()
 				child.restart({ "-u", "scripts/init.lua" })
-				-- Mock the 'helpers' module that ltex_plus.lua requires at load time
 				child.lua([[
 					package.loaded.helpers = {
 						get_dictionary_words = function() return {} end,

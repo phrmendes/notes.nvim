@@ -1,5 +1,8 @@
 --- Picker-specific utilities
 
+local coerce_to_string = require("notes.utils").coerce_to_string
+local edit = require("notes.utils").edit
+
 ---@private
 local utils = {}
 
@@ -54,18 +57,17 @@ utils.get_picker = function() return require("notes.config").picker or require("
 utils.on_choice = function(choice)
 	if not choice then return end
 
+	choice = coerce_to_string(choice)
+
 	local parts = vim.split(choice, ":")
 	local lnum = tonumber(parts[2] or "")
 
 	if not lnum then
-		require("notes.utils").edit(choice)
+		edit(choice)
 		return
 	end
 
-	-- Open the file with the cursor at the matched line, going through
-	-- utils.edit so the swap-file and buffer-reload handling is applied
-	-- uniformly.
-	require("notes.utils").edit(parts[1], lnum)
+	edit(parts[1], lnum)
 end
 
 return utils

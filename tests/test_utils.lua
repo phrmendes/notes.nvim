@@ -133,8 +133,6 @@ T["edit"]["opens an existing file without prompting on stale swap"] = function()
 	local file_path = vim.fs.joinpath(temp_dir, "note.md")
 	vim.fn.writefile({ "# Hello" }, file_path)
 
-	-- Older swap mtime than the disk file is what triggers the E13
-	-- "File exists and is not a new version" prompt in Neovim.
 	local swap_path = vim.fs.joinpath(temp_dir, ".note.md.swp")
 	vim.fn.writefile({ "stale swap content" }, swap_path)
 	local old_time = vim.uv.now() - 3600 * 1000
@@ -158,8 +156,6 @@ T["edit"]["switches to already-loaded buffer and reloads from disk"] = function(
 
 	vim.fn.writefile({ "# Modified on disk" }, file_path)
 
-	-- Existing buffer should be reused and reloaded from disk so
-	-- the on-disk change is visible to the user.
 	utils.edit(file_path)
 	eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], "# Modified on disk")
 end
