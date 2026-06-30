@@ -1,4 +1,4 @@
----@diagnostic disable: duplicate-set-field
+---@diagnostic disable: duplicate-set-field, missing-parameter, need-check-nil
 local test = require("mini.test")
 local new_set, eq = test.new_set, test.expect.equality
 
@@ -80,6 +80,7 @@ T["notes lsp"]["injects Pick language for ltex_plus client with languages"] = fu
 	restore_all()
 
 	assert(results[1])
+	assert(results[1].result[2])
 	eq(#results[1].result, 2)
 	eq(results[1].result[2].title, "Pick language")
 	eq(results[1].result[2].command.command, "_ltex.pickLanguage")
