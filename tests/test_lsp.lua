@@ -31,7 +31,7 @@ T["lsp"]["can disable marksman"] = function()
 		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
 	]])
 
-	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { marksman = false } })]])
+	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { marksman = { enabled = false } } })]])
 
 	local enabled = child.lua_get("_G.captured_lsp_enable")
 	eq(#enabled, 1)
@@ -47,7 +47,7 @@ T["lsp"]["can disable ltex_plus"] = function()
 		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
 	]])
 
-	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { ltex_plus = false } })]])
+	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { ltex_plus = { enabled = false } } })]])
 
 	local enabled = child.lua_get("_G.captured_lsp_enable")
 	eq(#enabled, 1)
@@ -63,7 +63,21 @@ T["lsp"]["can disable both"] = function()
 		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
 	]])
 
-	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { marksman = false, ltex_plus = false } })]])
+	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { marksman = { enabled = false }, ltex_plus = { enabled = false } } })]])
+
+	eq(#child.lua_get("_G.captured_lsp_enable"), 0)
+end
+
+T["lsp"]["lsp = false disables all servers"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	utils.setup(child, temp_dir)
+	child.lua([[
+		_G.captured_lsp_enable = {}
+		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
+	]])
+
+	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = false })]])
 
 	eq(#child.lua_get("_G.captured_lsp_enable"), 0)
 end
@@ -78,7 +92,7 @@ T["lsp"]["can configure ltex_plus languages via setup"] = function()
 		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
 	]])
 
-	child.lua(string.format([[require("notes.config").setup({ path = %q, lsp = { marksman = false, ltex_plus = { languages = { "en-US", "pt-BR" } } } })]], temp_dir))
+	child.lua(string.format([[require("notes.config").setup({ path = %q, lsp = { marksman = { enabled = false }, ltex_plus = { enabled = true, languages = { "en-US", "pt-BR" } } } })]], temp_dir))
 
 	local captured = child.lua_get("_G.captured_lsp_config")
 	eq(captured.name, "ltex_plus")

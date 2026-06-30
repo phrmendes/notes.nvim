@@ -18,9 +18,13 @@
 ---@field title_format string
 
 ---@class NotesLtexPlusConfig
+---@field enabled? boolean Enable ltex-ls-plus LSP on setup (default: true)
 ---@field language? string Initial language code (default: "en-US")
 ---@field languages? string[] Languages available in the picker
 
+---@class NotesMarksmanConfig
+---@field enabled? boolean Enable marksman LSP on setup (default: true)
+
 ---@class NotesLspConfig
----@field marksman boolean Auto-enable marksman LSP on setup (default: true)
+---@field marksman boolean | NotesMarksmanConfig Auto-enable marksman LSP on setup (default: true)
 ---@field ltex_plus boolean | NotesLtexPlusConfig Auto-enable ltex-ls-plus LSP on setup (default: true)

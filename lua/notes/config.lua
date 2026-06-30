@@ -9,7 +9,7 @@ local default_picker = pcall(require, "mini.pick") and "mini" or "native"
 local defaults = {
 	path = vim.env.HOME .. "/Documents/notes",
 	picker = default_picker,
-	lsp = { marksman = true, ltex_plus = true },
+	lsp = { marksman = { enabled = true }, ltex_plus = { enabled = true } },
 	journal = { title_format = "%Y-%m-%d" },
 }
 
@@ -41,10 +41,16 @@ function config.setup(opts)
 	utils.mkdirp(config.journal.path)
 
 	if merged.lsp then
-		if merged.lsp.marksman then vim.lsp.enable("marksman") end
-		if merged.lsp.ltex_plus then
+		local marksman = merged.lsp.marksman
+		if marksman and (marksman == true or marksman.enabled ~= false) then vim.lsp.enable("marksman") end
+		local ltex_plus = merged.lsp.ltex_plus
+		if ltex_plus and (ltex_plus == true or ltex_plus.enabled ~= false) then
 			require("notes.lsp").setup_code_actions()
-			if type(merged.lsp.ltex_plus) == "table" then vim.lsp.config("ltex_plus", { settings = { ltex = merged.lsp.ltex_plus } }) end
+			if type(ltex_plus) == "table" then
+				local settings = vim.tbl_extend("force", {}, ltex_plus)
+				settings.enabled = nil
+				vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
+			end
 			vim.lsp.enable("ltex_plus")
 		end
 	end
