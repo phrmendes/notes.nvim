@@ -4,7 +4,20 @@ local new_set, eq = test.new_set, test.expect.equality
 
 local child, T = utils.new_child_set()
 
-T["lsp"] = new_set()
+T["lsp"] = new_set({
+	hooks = {
+		pre_case = function()
+			_G.orig_writefile = vim.fn.writefile
+			_G.orig_mkdir = vim.fn.mkdir
+			vim.fn.writefile = function() return 0 end
+			vim.fn.mkdir = function() return 1 end
+		end,
+		post_case = function()
+			vim.fn.writefile = _G.orig_writefile
+			vim.fn.mkdir = _G.orig_mkdir
+		end,
+	},
+})
 
 T["lsp"]["default enables both marksman and ltex_plus"] = function()
 	local temp_dir = utils.create_temp_dir(child)
