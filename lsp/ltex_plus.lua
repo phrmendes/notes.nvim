@@ -16,7 +16,7 @@ local mark = " [*]"
 ---@field notify? fun(lang: string, items: string[]) Optional notification after persist
 
 ---@type table<string, LtexPersistSpec>
-local persist_specs = {
+local specs = {
 	["_ltex.addToDictionary"] = {
 		setting = "dictionary",
 		arg_key = "words",
@@ -130,7 +130,7 @@ return {
 			end,
 		}
 
-		vim.iter(persist_specs):each(function(cmd, spec)
+		vim.iter(specs):each(function(cmd, spec)
 			commands[cmd] = function(command)
 				vim.iter(command.arguments[1][spec.arg_key]):each(function(lang, items)
 					persist(spec.setting, lang, items, settings)
