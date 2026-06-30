@@ -139,13 +139,15 @@ local function attach(lsp_config)
 	return client
 end
 
+local function run_ltex(cmd, arguments) vim.lsp.commands[cmd]({ arguments = { arguments or {} } }) end
+
 T["lsp"]["addToDictionary sends didChangeConfiguration"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local lsp_config = loadfile(lsp_file)()
 	local client = attach(lsp_config)
 
 	local before = #client._notified
-	vim.lsp.commands["_ltex.addToDictionary"]({ arguments = { { words = { ["en-US"] = { "testword" } } } } })
+	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
 
 	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
 	eq(#after_calls > before, true)
@@ -160,7 +162,7 @@ T["lsp"]["disableRules notifies rule disabled"] = function()
 	local orig = vim.notify
 	vim.notify = function(msg) table.insert(notified, msg) end
 
-	vim.lsp.commands["_ltex.disableRules"]({ arguments = { { ruleIds = { ["en-US"] = { "RULE_X" } } } } })
+	run_ltex("_ltex.disableRules", { ruleIds = { ["en-US"] = { "RULE_X" } } })
 
 	vim.notify = orig
 	eq(#notified, 1)
@@ -176,7 +178,7 @@ T["lsp"]["hideFalsePositives notifies false positive hidden"] = function()
 	local orig = vim.notify
 	vim.notify = function(msg) table.insert(notified, msg) end
 
-	vim.lsp.commands["_ltex.hideFalsePositives"]({ arguments = { { falsePositives = { ["en-US"] = { "fp-string" } } } } })
+	run_ltex("_ltex.hideFalsePositives", { falsePositives = { ["en-US"] = { "fp-string" } } })
 
 	vim.notify = orig
 	eq(#notified, 1)
@@ -189,7 +191,7 @@ T["lsp"]["disableRules sends didChangeConfiguration"] = function()
 	local client = attach(lsp_config)
 
 	local before = #client._notified
-	vim.lsp.commands["_ltex.disableRules"]({ arguments = { { ruleIds = { ["en-US"] = { "RULE_X" } } } } })
+	run_ltex("_ltex.disableRules", { ruleIds = { ["en-US"] = { "RULE_X" } } })
 
 	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
 	eq(#after_calls > before, true)
@@ -204,7 +206,7 @@ T["lsp"]["addToDictionary notifies words added"] = function()
 	local orig = vim.notify
 	vim.notify = function(msg) table.insert(notified, msg) end
 
-	vim.lsp.commands["_ltex.addToDictionary"]({ arguments = { { words = { ["en-US"] = { "testword" } } } } })
+	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
 
 	vim.notify = orig
 	eq(#notified, 1)
@@ -222,7 +224,7 @@ T["lsp"]["pickLanguage notifies language set via input"] = function()
 	vim.notify = function(msg) table.insert(notified, msg) end
 	vim.ui.input = function(_, cb) cb("pt-BR") end
 
-	vim.lsp.commands["_ltex.pickLanguage"]({})
+	run_ltex("_ltex.pickLanguage")
 
 	vim.notify = orig_notify
 	vim.ui.input = orig_input
@@ -242,7 +244,7 @@ T["lsp"]["pickLanguage notifies language set via select"] = function()
 	vim.notify = function(msg) table.insert(notified, msg) end
 	vim.ui.select = function(_, _, cb) cb("pt-BR") end
 
-	vim.lsp.commands["_ltex.pickLanguage"]({})
+	run_ltex("_ltex.pickLanguage")
 
 	vim.notify = orig_notify
 	vim.ui.select = orig_select
@@ -260,7 +262,7 @@ T["lsp"]["pickLanguage falls back to vim.ui.input when languages is empty"] = fu
 	vim.ui.input = function() input_called = true end
 	vim.ui.select = function() select_called = true end
 
-	vim.lsp.commands["_ltex.pickLanguage"]({})
+	run_ltex("_ltex.pickLanguage")
 
 	eq(input_called, true)
 	eq(select_called, false)
@@ -277,7 +279,7 @@ T["lsp"]["pickLanguage uses vim.ui.select when languages is set"] = function()
 	vim.ui.input = function() input_called = true end
 	vim.ui.select = function() select_called = true end
 
-	vim.lsp.commands["_ltex.pickLanguage"]({})
+	run_ltex("_ltex.pickLanguage")
 
 	eq(select_called, true)
 	eq(input_called, false)
