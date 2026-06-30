@@ -44,6 +44,7 @@ function config.setup(opts)
 		if merged.lsp.marksman then vim.lsp.enable("marksman") end
 		if merged.lsp.ltex_plus then
 			require("notes.lsp").setup_code_actions()
+			if type(merged.lsp.ltex_plus) == "table" then vim.lsp.config("ltex_plus", { settings = { ltex = merged.lsp.ltex_plus } }) end
 			vim.lsp.enable("ltex_plus")
 		end
 	end

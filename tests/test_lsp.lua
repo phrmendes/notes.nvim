@@ -68,6 +68,25 @@ T["lsp"]["can disable both"] = function()
 	eq(#child.lua_get("_G.captured_lsp_enable"), 0)
 end
 
+T["lsp"]["can configure ltex_plus languages via setup"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	child.lua([[
+		_G.captured_lsp_config = nil
+		_G.captured_lsp_enable = {}
+		vim.lsp.config = function(name, opts) _G.captured_lsp_config = { name = name, opts = opts } end
+		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
+	]])
+
+	child.lua(string.format([[require("notes.config").setup({ path = %q, lsp = { marksman = false, ltex_plus = { languages = { "en-US", "pt-BR" } } } })]], temp_dir))
+
+	local captured = child.lua_get("_G.captured_lsp_config")
+	eq(captured.name, "ltex_plus")
+	eq(captured.opts.settings.ltex.languages[1], "en-US")
+	eq(captured.opts.settings.ltex.languages[2], "pt-BR")
+	eq(#child.lua_get("_G.captured_lsp_enable"), 1)
+end
+
 T["lsp"]["marksman.lua config file is valid"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "marksman.lua")
 	eq(vim.uv.fs_stat(lsp_file) ~= nil, true)
