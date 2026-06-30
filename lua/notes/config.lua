@@ -45,10 +45,18 @@ function config.setup(opts)
 		if marksman and (marksman == true or marksman.enabled ~= false) then vim.lsp.enable("marksman") end
 		local ltex_plus = merged.lsp.ltex_plus
 		if ltex_plus and (ltex_plus == true or ltex_plus.enabled ~= false) then
-			require("notes.lsp").setup_code_actions()
+			local notes_lsp = require("notes.lsp")
+			notes_lsp.setup_code_actions()
 			if type(ltex_plus) == "table" then
 				local settings = vim.tbl_extend("force", {}, ltex_plus)
 				settings.enabled = nil
+				local lang = type(settings.languages) == "table" and settings.languages or {}
+				settings.language = lang.default or settings.language or "en-US"
+				settings.languages = lang.additionals or {}
+				local persisted = notes_lsp.read_persisted_data()
+				settings.dictionary = persisted.dictionary
+				settings.disabledRules = persisted.disabledRules
+				settings.hiddenFalsePositives = persisted.hiddenFalsePositives
 				vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
 			end
 			vim.lsp.enable("ltex_plus")

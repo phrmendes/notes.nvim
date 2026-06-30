@@ -83,7 +83,7 @@ T["notes lsp"]["injects Pick language for ltex_plus client with languages"] = fu
 	eq(results[1].result[2].command.command, "_ltex.pickLanguage")
 end
 
-T["notes lsp"]["does not inject when ltex_plus languages is empty"] = function()
+T["notes lsp"]["always injects for ltex_plus regardless of languages"] = function()
 	restore_all()
 	local notes_lsp = require("notes.lsp")
 
@@ -98,8 +98,8 @@ T["notes lsp"]["does not inject when ltex_plus languages is empty"] = function()
 
 	restore_all()
 
-	eq(#results[1].result, 1)
-	eq(results[1].result[1].title, "server action")
+	eq(#results[1].result, 2)
+	eq(results[1].result[2].title, "Pick language")
 end
 
 T["notes lsp"]["does not inject for non-ltex clients"] = function()

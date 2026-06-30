@@ -1,6 +1,6 @@
 ---@class LtexSettings
 ---@field language string Current language code
----@field languages string[] Available languages for cycling
+---@field languages string[] Picker list (additionals from user config, never sent to ltex)
 ---@field dictionary table<string, string[]> Words per language
 ---@field disabledRules table<string, string[]> Disabled rule IDs per language
 ---@field hiddenFalsePositives table<string, string[]> Hidden false positives per language
@@ -57,10 +57,16 @@ local function write(name, data)
 	vim.fn.writefile({ encoded }, vim.fs.joinpath(ltex_path, name .. ".json"))
 end
 
---- Reload ltex settings after a change.
+--- Reload ltex settings after a change. Strips `languages` from the payload so ltex
+--- never sees the picker list — preventing it from skipping the document check when
+--- the current `language` is a member of `languages`.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
-local function reload_settings(client, settings) client:notify("workspace/didChangeConfiguration", { settings = settings }) end
+local function reload_settings(client, settings)
+	local payload = vim.tbl_extend("force", {}, settings)
+	payload.languages = nil
+	client:notify("workspace/didChangeConfiguration", { settings = payload })
+end
 
 --- Get the ltex settings from a client.
 ---@param client vim.lsp.Client
@@ -91,7 +97,8 @@ end
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
 local function pick_language(client, settings)
-	if #settings.languages == 0 then
+	local picker_languages = settings.languages
+	if #picker_languages == 0 then
 		vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
 			if not lang or lang == "" then return end
 			set_language(client, settings, lang)
@@ -99,7 +106,7 @@ local function pick_language(client, settings)
 		return
 	end
 
-	local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
+	local items = vim.iter(picker_languages):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
 
 	vim.ui.select(items, { prompt = "Language" }, function(choice)
 		if not choice then return end
@@ -179,7 +186,6 @@ return {
 	---@param bufnr integer Buffer the LSP attached to
 	on_attach = function(client, bufnr)
 		vim.iter(make_commands(client, bufnr)):each(function(cmd, handler) vim.lsp.commands[cmd] = handler end)
-		reload_settings(client, get_settings(client))
 	end,
 	settings = {
 		ltex = {

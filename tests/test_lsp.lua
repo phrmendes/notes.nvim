@@ -92,12 +92,14 @@ T["lsp"]["can configure ltex_plus languages via setup"] = function()
 		vim.lsp.enable = function(name) table.insert(_G.captured_lsp_enable, name) end
 	]])
 
-	child.lua(string.format([[require("notes.config").setup({ path = %q, lsp = { marksman = { enabled = false }, ltex_plus = { enabled = true, languages = { "en-US", "pt-BR" } } } })]], temp_dir))
+	child.lua(string.format([[require("notes.config").setup({ path = %q, lsp = { marksman = { enabled = false }, ltex_plus = { enabled = true, languages = { default = "en-US", additionals = { "pt-BR", "fr-FR" } } } } })]], temp_dir))
 
 	local captured = child.lua_get("_G.captured_lsp_config")
 	eq(captured.name, "ltex_plus")
-	eq(captured.opts.settings.ltex.languages[1], "en-US")
-	eq(captured.opts.settings.ltex.languages[2], "pt-BR")
+	eq(captured.opts.settings.ltex.language, "en-US")
+	eq(captured.opts.settings.ltex.languages[1], "pt-BR")
+	eq(captured.opts.settings.ltex.languages[2], "fr-FR")
+	eq(captured.opts.settings.ltex.notes_languages, nil)
 	eq(#child.lua_get("_G.captured_lsp_enable"), 1)
 end
 
@@ -184,6 +186,18 @@ T["lsp"]["addToDictionary sends didChangeConfiguration"] = function()
 
 	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
 	eq(#after_calls > before, true)
+end
+
+T["lsp"]["reload_settings does not send languages to ltex"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	lsp_config.settings.ltex.languages = { "en-US", "pt-BR" }
+	local client = attach(lsp_config)
+
+	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
+
+	local notif = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
+	eq(notif[1].params.settings.languages, nil)
 end
 
 T["lsp"]["disableRules notifies rule disabled"] = function()

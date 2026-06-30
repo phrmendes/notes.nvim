@@ -17,10 +17,13 @@
 ---@field path string | nil
 ---@field title_format string
 
+---@class NotesLtexLanguages
+---@field default? string Starting language code (maps to ltex `language`, default: "en-US")
+---@field additionals? string[] Extra languages shown in the picker
+
 ---@class NotesLtexPlusConfig
 ---@field enabled? boolean Enable ltex-ls-plus LSP on setup (default: true)
----@field language? string Initial language code (default: "en-US")
----@field languages? string[] Languages available in the picker
+---@field languages? NotesLtexLanguages Language configuration
 
 ---@class NotesMarksmanConfig
 ---@field enabled? boolean Enable marksman LSP on setup (default: true)

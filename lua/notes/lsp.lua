@@ -9,6 +9,44 @@ local notes = {}
 local original_buf_request_all
 local installed = false
 
+local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
+
+local persist_categories = { "dictionary", "disabledRules", "hiddenFalsePositives" }
+
+--- Read a category's persisted data from its JSON file.
+---@param name string Category name (e.g. "dictionary")
+---@return table<string, string[]> Map of language to items
+local function read_category(name)
+	local path = vim.fs.joinpath(ltex_path, name .. ".json")
+	if not vim.uv.fs_stat(path) then return {} end
+
+	local content = vim.fn.readfile(path)
+	if not content[1] then return {} end
+
+	local ok, data = pcall(vim.json.decode, content[1])
+	if not ok or type(data) ~= "table" then return {} end
+
+	return data
+end
+
+--- Read persisted dictionary, disabled rules, and hidden false positives from disk.
+---
+--- Used by `config.setup` to pre-populate the ltex settings so the server starts
+--- with the user's accumulated words/rules instead of an empty state. The
+--- `didChangeConfiguration` path is avoided because sending it during `on_attach`
+--- cancels ltex's initial document check (see ltex-ls-plus issue: a re-check
+--- triggered by the notification preempts the in-flight initial check, and the
+--- follow-up check never produces diagnostics before shutdown in short-lived
+--- Neovim sessions).
+---@return table<string, table<string, string[]>>
+function notes.read_persisted_data()
+	local result = {}
+	for _, name in ipairs(persist_categories) do
+		result[name] = read_category(name)
+	end
+	return result
+end
+
 ---@param action lsp.CodeAction | lsp.Command
 ---@return boolean
 local function is_pick_language(action) return action.command and action.command.command == "_ltex.pickLanguage" end
@@ -17,8 +55,7 @@ local function is_pick_language(action) return action.command and action.command
 local function inject_pick_language(results)
 	for client_id, result in pairs(results) do
 		local client = vim.lsp.get_client_by_id(client_id)
-		local languages = client and client.config and client.config.settings and client.config.settings.ltex and client.config.settings.ltex.languages
-		if client and client.name == "ltex_plus" and languages and #languages > 0 then
+		if client and client.name == "ltex_plus" then
 			result.result = result.result or {}
 			local already = vim.iter(result.result):any(is_pick_language)
 			if not already then table.insert(result.result, {

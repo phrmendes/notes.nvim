@@ -6,6 +6,7 @@
   packages = with pkgs; [
     ripgrep
     fd
+    ltex-ls-plus
   ];
 
   scripts = {
