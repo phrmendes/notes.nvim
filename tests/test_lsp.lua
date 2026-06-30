@@ -1,3 +1,4 @@
+---@diagnostic disable: duplicate-set-field, missing-parameter
 local test = require("mini.test")
 local utils = dofile("tests/utils.lua")
 local new_set, eq = test.new_set, test.expect.equality

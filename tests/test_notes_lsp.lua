@@ -1,3 +1,4 @@
+---@diagnostic disable: duplicate-set-field
 local test = require("mini.test")
 local new_set, eq = test.new_set, test.expect.equality
 
@@ -32,7 +33,7 @@ local function install_test_request_mock(result_actions)
 	vim.lsp.buf_request_all = function(_, method, _, callback)
 		if method == "textDocument/codeAction" then callback({
 			[1] = { result = result_actions, context = { client_id = 1 } },
-		}) end
+		}, nil) end
 	end
 end
 
@@ -78,6 +79,7 @@ T["notes lsp"]["injects Pick language for ltex_plus client with languages"] = fu
 
 	restore_all()
 
+	assert(results[1])
 	eq(#results[1].result, 2)
 	eq(results[1].result[2].title, "Pick language")
 	eq(results[1].result[2].command.command, "_ltex.pickLanguage")

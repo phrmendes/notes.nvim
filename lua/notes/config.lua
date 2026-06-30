@@ -32,19 +32,24 @@ local servers = {
 		if not opts or (opts ~= true and opts.enabled == false) then return end
 		local lsp = require("notes.lsp")
 		lsp.setup_code_actions()
+
 		if type(opts) ~= "table" then
 			vim.lsp.enable("ltex_plus")
 			return
 		end
+
 		local settings = vim.tbl_extend("force", {}, opts)
 		settings.enabled = nil
+
 		local lang = type(settings.languages) == "table" and settings.languages or {}
 		settings.language = lang.default or settings.language or "en-US"
 		settings.languages = lang.additionals or {}
+
 		local persisted = lsp.read_persisted_data()
 		settings.dictionary = persisted.dictionary
 		settings.disabledRules = persisted.disabledRules
 		settings.hiddenFalsePositives = persisted.hiddenFalsePositives
+
 		vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
 		vim.lsp.enable("ltex_plus")
 	end,
