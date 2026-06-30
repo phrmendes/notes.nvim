@@ -42,7 +42,10 @@ function config.setup(opts)
 
 	if merged.lsp then
 		if merged.lsp.marksman then vim.lsp.enable("marksman") end
-		if merged.lsp.ltex_plus then vim.lsp.enable("ltex_plus") end
+		if merged.lsp.ltex_plus then
+			require("notes.lsp").setup_code_actions()
+			vim.lsp.enable("ltex_plus")
+		end
 	end
 end
 

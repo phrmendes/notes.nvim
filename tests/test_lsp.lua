@@ -160,7 +160,7 @@ T["lsp"]["disableRules notifies rule disabled"] = function()
 
 	local notified = {}
 	local orig = vim.notify
-	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.notify = function(msg, _, _) table.insert(notified, msg) end
 
 	run_ltex("_ltex.disableRules", { ruleIds = { ["en-US"] = { "RULE_X" } } })
 
@@ -176,7 +176,7 @@ T["lsp"]["hideFalsePositives notifies false positive hidden"] = function()
 
 	local notified = {}
 	local orig = vim.notify
-	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.notify = function(msg, _, _) table.insert(notified, msg) end
 
 	run_ltex("_ltex.hideFalsePositives", { falsePositives = { ["en-US"] = { "fp-string" } } })
 
@@ -204,7 +204,7 @@ T["lsp"]["addToDictionary notifies words added"] = function()
 
 	local notified = {}
 	local orig = vim.notify
-	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.notify = function(msg, _, _) table.insert(notified, msg) end
 
 	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
 
@@ -221,7 +221,7 @@ T["lsp"]["pickLanguage notifies language set via input"] = function()
 	local notified = {}
 	local orig_notify = vim.notify
 	local orig_input = vim.ui.input
-	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.notify = function(msg, _, _) table.insert(notified, msg) end
 	vim.ui.input = function(_, cb) cb("pt-BR") end
 
 	run_ltex("_ltex.pickLanguage")
@@ -241,7 +241,7 @@ T["lsp"]["pickLanguage notifies language set via select"] = function()
 	local notified = {}
 	local orig_notify = vim.notify
 	local orig_select = vim.ui.select
-	vim.notify = function(msg) table.insert(notified, msg) end
+	vim.notify = function(msg, _, _) table.insert(notified, msg) end
 	vim.ui.select = function(_, _, cb) cb("pt-BR") end
 
 	run_ltex("_ltex.pickLanguage")
@@ -339,12 +339,12 @@ T["lsp"]["read_persisted_data populates settings on attach"] = function()
 	local orig_fs_stat = vim.uv.fs_stat
 	local orig_readfile = vim.fn.readfile
 	vim.uv.fs_stat = function() return { type = "file" } end
-	vim.fn.readfile = function(_)
-		local content = nil
+	vim.fn.readfile = function(path, _, _)
+		local content = "{}"
 		for category, data in pairs(read_data) do
-			if _ and _:find(category) then content = vim.fn.json_encode(data) end
+			if path and path:find(category) then content = vim.fn.json_encode(data) end
 		end
-		return { content or "{}" }
+		return { content }
 	end
 
 	attach(lsp_config)
