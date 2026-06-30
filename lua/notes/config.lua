@@ -22,33 +22,33 @@ config.picker = nil
 ---@type NotesJournalConfig
 config.journal = {}
 
----@param marksman boolean | NotesMarksmanConfig | nil
-local function enable_marksman(marksman)
-	if not marksman or (marksman ~= true and marksman.enabled == false) then return end
-	vim.lsp.enable("marksman")
-end
-
----@param ltex_plus boolean | NotesLtexPlusConfig | nil
-local function enable_ltex(ltex_plus)
-	if not ltex_plus or (ltex_plus ~= true and ltex_plus.enabled == false) then return end
-	local notes_lsp = require("notes.lsp")
-	notes_lsp.setup_code_actions()
-	if type(ltex_plus) ~= "table" then
+---@type table<string, fun(opts: boolean | table | nil)>
+local servers = {
+	marksman = function(opts)
+		if not opts or (opts ~= true and opts.enabled == false) then return end
+		vim.lsp.enable("marksman")
+	end,
+	ltex_plus = function(opts)
+		if not opts or (opts ~= true and opts.enabled == false) then return end
+		local lsp = require("notes.lsp")
+		lsp.setup_code_actions()
+		if type(opts) ~= "table" then
+			vim.lsp.enable("ltex_plus")
+			return
+		end
+		local settings = vim.tbl_extend("force", {}, opts)
+		settings.enabled = nil
+		local lang = type(settings.languages) == "table" and settings.languages or {}
+		settings.language = lang.default or settings.language or "en-US"
+		settings.languages = lang.additionals or {}
+		local persisted = lsp.read_persisted_data()
+		settings.dictionary = persisted.dictionary
+		settings.disabledRules = persisted.disabledRules
+		settings.hiddenFalsePositives = persisted.hiddenFalsePositives
+		vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
 		vim.lsp.enable("ltex_plus")
-		return
-	end
-	local settings = vim.tbl_extend("force", {}, ltex_plus)
-	settings.enabled = nil
-	local lang = type(settings.languages) == "table" and settings.languages or {}
-	settings.language = lang.default or settings.language or "en-US"
-	settings.languages = lang.additionals or {}
-	local persisted = notes_lsp.read_persisted_data()
-	settings.dictionary = persisted.dictionary
-	settings.disabledRules = persisted.disabledRules
-	settings.hiddenFalsePositives = persisted.hiddenFalsePositives
-	vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
-	vim.lsp.enable("ltex_plus")
-end
+	end,
+}
 
 --- Setup configuration
 ---@param opts UserConfig | nil User configuration options
@@ -69,8 +69,7 @@ function config.setup(opts)
 	utils.mkdirp(config.journal.path)
 
 	if not merged.lsp then return end
-	enable_marksman(merged.lsp.marksman)
-	enable_ltex(merged.lsp.ltex_plus)
+	vim.iter(servers):each(function(name, setup) setup(merged.lsp[name]) end)
 end
 
 --- Swap the active picker at runtime
