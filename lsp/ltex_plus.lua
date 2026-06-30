@@ -12,6 +12,9 @@
 ---@field arg_key string Command argument key (e.g. "words")
 ---@field msg string Notification message format (receives lang and joined items)
 
+---@class LtexCheckDocumentParams
+---@field uri? string
+
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
 local mark = " [*]"
 
@@ -59,18 +62,19 @@ end
 ---@param settings LtexSettings
 local function reload_settings(client, settings) client:notify("workspace/didChangeConfiguration", { settings = settings }) end
 
---- Get the typed ltex settings from a client.
+--- Get the ltex settings from a client.
 ---@param client vim.lsp.Client
 ---@return LtexSettings
-local function get_settings(client) return client.config.settings.ltex end
+local function get_settings(client)
+	return client.config.settings.ltex --[[@as LtexSettings]]
+end
 
---- Load persisted dictionary/rules/false-positives into the in-memory settings.
----@param settings LtexSettings
-local function load_persisted_data(settings)
-	vim.iter(specs):each(function(_, spec)
-		local data = read(spec.setting)
-		vim.iter(settings.languages):each(function(lang) settings[spec.setting][lang] = data[lang] or {} end)
-	end)
+--- Read persisted dictionary/rules/false-positives from disk.
+---@return table<string, table<string, string[]>> Map of setting → lang → words
+local function read_persisted_data()
+	local result = {}
+	vim.iter(specs):each(function(_, spec) result[spec.setting] = read(spec.setting) end)
+	return result
 end
 
 --- Set the current language and notify + reload.
@@ -96,6 +100,7 @@ local function pick_language(client, settings)
 	end
 
 	local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
+
 	vim.ui.select(items, { prompt = "Language" }, function(choice)
 		if not choice then return end
 		local lang = choice:gsub(vim.pesc(mark) .. "$", "")
@@ -106,7 +111,7 @@ end
 --- Toggle the spell check setting and reload.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
-local function toggle_spell_check(client, settings)
+local function toggle_spellcheck(client, settings)
 	settings.spellCheck = not settings.spellCheck
 	reload_settings(client, settings)
 end
@@ -116,11 +121,8 @@ end
 ---@param bufnr integer
 ---@param command lsp.Command
 local function check_document(client, bufnr, command)
-	---@class LtexCheckDocumentParams
-	---@field uri? string
-	local params = command.arguments and command.arguments[1]
+	local params = (command.arguments and command.arguments[1] or {}) --[[@as LtexCheckDocumentParams]]
 	if type(params) ~= "table" then params = {} end
-	---@cast params LtexCheckDocumentParams
 	params.uri = params.uri or vim.uri_from_bufnr(bufnr)
 	client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
 end
@@ -143,7 +145,11 @@ end
 ---@return table<string, function>
 local function make_commands(client, bufnr)
 	local settings = get_settings(client)
-	load_persisted_data(settings)
+
+	vim.iter(read_persisted_data()):each(function(setting, langs)
+		vim.iter(settings.languages):each(function(lang) settings[setting][lang] = langs[lang] or {} end)
+	end)
+
 	local commands = {}
 
 	vim.iter(specs):each(function(cmd, spec)
@@ -157,7 +163,7 @@ local function make_commands(client, bufnr)
 		end
 	end)
 
-	commands["_ltex.spellCheck"] = function() toggle_spell_check(client, settings) end
+	commands["_ltex.spellCheck"] = function() toggle_spellcheck(client, settings) end
 	commands["_ltex.pickLanguage"] = function() pick_language(client, settings) end
 	commands["_ltex.checkDocument"] = function(command) check_document(client, bufnr, command) end
 

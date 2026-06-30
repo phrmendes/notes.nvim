@@ -325,4 +325,54 @@ T["lsp"]["no textDocument/codeAction handler override after on_attach"] = functi
 	eq(client.handlers["textDocument/codeAction"], nil)
 end
 
+T["lsp"]["read_persisted_data populates settings on attach"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	lsp_config.settings.ltex.languages = { "en-US" }
+
+	local read_data = {
+		dictionary = { ["en-US"] = { "foo", "bar" } },
+		disabledRules = { ["en-US"] = { "RULE_X" } },
+		hiddenFalsePositives = { ["en-US"] = { "fp" } },
+	}
+
+	local orig_fs_stat = vim.uv.fs_stat
+	local orig_readfile = vim.fn.readfile
+	vim.uv.fs_stat = function() return { type = "file" } end
+	vim.fn.readfile = function(_)
+		local content = nil
+		for category, data in pairs(read_data) do
+			if _ and _:find(category) then content = vim.fn.json_encode(data) end
+		end
+		return { content or "{}" }
+	end
+
+	attach(lsp_config)
+
+	vim.uv.fs_stat = orig_fs_stat
+	vim.fn.readfile = orig_readfile
+
+	eq(lsp_config.settings.ltex.dictionary["en-US"][1], "foo")
+	eq(lsp_config.settings.ltex.dictionary["en-US"][2], "bar")
+	eq(lsp_config.settings.ltex.disabledRules["en-US"][1], "RULE_X")
+	eq(lsp_config.settings.ltex.hiddenFalsePositives["en-US"][1], "fp")
+end
+
+T["lsp"]["pickLanguage strips the mark from the current language on select"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	lsp_config.settings.ltex.languages = { "en-US", "pt-BR" }
+	lsp_config.settings.ltex.language = "en-US"
+	local client = attach(lsp_config)
+
+	local orig_select = vim.ui.select
+	vim.ui.select = function(_, _, cb) cb("pt-BR [*]") end
+
+	client._notified = {}
+	run_ltex("_ltex.pickLanguage")
+
+	vim.ui.select = orig_select
+	eq(lsp_config.settings.ltex.language, "pt-BR")
+end
+
 return T
