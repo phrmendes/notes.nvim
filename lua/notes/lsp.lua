@@ -17,11 +17,12 @@ local function is_pick_language(action) return action.command and action.command
 local function inject_pick_language(results)
 	for client_id, result in pairs(results) do
 		local client = vim.lsp.get_client_by_id(client_id)
-		if client and client.name == "ltex_plus" then
+		local languages = client and client.config and client.config.settings and client.config.settings.ltex and client.config.settings.ltex.languages
+		if client and client.name == "ltex_plus" and languages and #languages > 0 then
 			result.result = result.result or {}
 			local already = vim.iter(result.result):any(is_pick_language)
 			if not already then table.insert(result.result, {
-				title = "Pick language (ltex)",
+				title = "Pick language",
 				kind = "refactor",
 				client_id = client_id,
 				command = { command = "_ltex.pickLanguage", arguments = {} },
