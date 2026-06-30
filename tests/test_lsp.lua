@@ -306,7 +306,7 @@ T["lsp"]["notes.ltex_pick_language warns when command not registered"] = functio
 
 	local warned = false
 	local orig_notify = vim.notify
-	vim.notify = function(_, level)
+	vim.notify = function(_, level, _)
 		if level == vim.log.levels.WARN then warned = true end
 	end
 
