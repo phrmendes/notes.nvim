@@ -22,6 +22,34 @@ config.picker = nil
 ---@type NotesJournalConfig
 config.journal = {}
 
+---@param marksman boolean | NotesMarksmanConfig | nil
+local function enable_marksman(marksman)
+	if not marksman or (marksman ~= true and marksman.enabled == false) then return end
+	vim.lsp.enable("marksman")
+end
+
+---@param ltex_plus boolean | NotesLtexPlusConfig | nil
+local function enable_ltex(ltex_plus)
+	if not ltex_plus or (ltex_plus ~= true and ltex_plus.enabled == false) then return end
+	local notes_lsp = require("notes.lsp")
+	notes_lsp.setup_code_actions()
+	if type(ltex_plus) ~= "table" then
+		vim.lsp.enable("ltex_plus")
+		return
+	end
+	local settings = vim.tbl_extend("force", {}, ltex_plus)
+	settings.enabled = nil
+	local lang = type(settings.languages) == "table" and settings.languages or {}
+	settings.language = lang.default or settings.language or "en-US"
+	settings.languages = lang.additionals or {}
+	local persisted = notes_lsp.read_persisted_data()
+	settings.dictionary = persisted.dictionary
+	settings.disabledRules = persisted.disabledRules
+	settings.hiddenFalsePositives = persisted.hiddenFalsePositives
+	vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
+	vim.lsp.enable("ltex_plus")
+end
+
 --- Setup configuration
 ---@param opts UserConfig | nil User configuration options
 function config.setup(opts)
@@ -40,28 +68,9 @@ function config.setup(opts)
 
 	utils.mkdirp(config.journal.path)
 
-	if merged.lsp then
-		local marksman = merged.lsp.marksman
-		if marksman and (marksman == true or marksman.enabled ~= false) then vim.lsp.enable("marksman") end
-		local ltex_plus = merged.lsp.ltex_plus
-		if ltex_plus and (ltex_plus == true or ltex_plus.enabled ~= false) then
-			local notes_lsp = require("notes.lsp")
-			notes_lsp.setup_code_actions()
-			if type(ltex_plus) == "table" then
-				local settings = vim.tbl_extend("force", {}, ltex_plus)
-				settings.enabled = nil
-				local lang = type(settings.languages) == "table" and settings.languages or {}
-				settings.language = lang.default or settings.language or "en-US"
-				settings.languages = lang.additionals or {}
-				local persisted = notes_lsp.read_persisted_data()
-				settings.dictionary = persisted.dictionary
-				settings.disabledRules = persisted.disabledRules
-				settings.hiddenFalsePositives = persisted.hiddenFalsePositives
-				vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
-			end
-			vim.lsp.enable("ltex_plus")
-		end
-	end
+	if not merged.lsp then return end
+	enable_marksman(merged.lsp.marksman)
+	enable_ltex(merged.lsp.ltex_plus)
 end
 
 --- Swap the active picker at runtime
