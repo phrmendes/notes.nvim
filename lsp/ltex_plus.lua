@@ -1,5 +1,5 @@
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
-local current_lang_mark = " [*]"
+local mark = " [*]"
 
 ---@class LtexSettings
 ---@field language string Current language code
@@ -22,8 +22,16 @@ local persist_specs = {
 		arg_key = "words",
 		notify = function(lang, items) vim.notify(string.format("ltex: added to dictionary (%s): %s", lang, table.concat(items, ", ")), vim.log.levels.INFO) end,
 	},
-	["_ltex.disableRules"] = { setting = "disabledRules", arg_key = "ruleIds" },
-	["_ltex.hideFalsePositives"] = { setting = "hiddenFalsePositives", arg_key = "falsePositives" },
+	["_ltex.disableRules"] = {
+		setting = "disabledRules",
+		arg_key = "ruleIds",
+		notify = function(lang, items) vim.notify(string.format("ltex: disabled rules (%s): %s", lang, table.concat(items, ", ")), vim.log.levels.INFO) end,
+	},
+	["_ltex.hideFalsePositives"] = {
+		setting = "hiddenFalsePositives",
+		arg_key = "falsePositives",
+		notify = function(lang, items) vim.notify(string.format("ltex: hid false positives (%s): %d item(s)", lang, #items), vim.log.levels.INFO) end,
+	},
 }
 
 --- Read a category's persisted data from a JSON file.
@@ -102,10 +110,10 @@ return {
 					end)
 					return
 				end
-				local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. current_lang_mark or lang end):totable()
+				local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
 				vim.ui.select(items, { prompt = "Language" }, function(choice)
 					if not choice then return end
-					local lang = choice:gsub(vim.pesc(current_lang_mark) .. "$", "")
+					local lang = choice:gsub(vim.pesc(mark) .. "$", "")
 					settings.language = lang
 					vim.notify("ltex: language set to " .. lang, vim.log.levels.INFO)
 					notify(client, settings)

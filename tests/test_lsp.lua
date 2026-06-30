@@ -151,6 +151,38 @@ T["lsp"]["addToDictionary sends didChangeConfiguration"] = function()
 	eq(#after_calls > before, true)
 end
 
+T["lsp"]["disableRules notifies rule disabled"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	attach(lsp_config)
+
+	local notified = {}
+	local orig = vim.notify
+	vim.notify = function(msg) table.insert(notified, msg) end
+
+	vim.lsp.commands["_ltex.disableRules"]({ arguments = { { ruleIds = { ["en-US"] = { "RULE_X" } } } } })
+
+	vim.notify = orig
+	eq(#notified, 1)
+	eq(notified[1]:find("RULE_X") ~= nil, true)
+end
+
+T["lsp"]["hideFalsePositives notifies false positive hidden"] = function()
+	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
+	local lsp_config = loadfile(lsp_file)()
+	attach(lsp_config)
+
+	local notified = {}
+	local orig = vim.notify
+	vim.notify = function(msg) table.insert(notified, msg) end
+
+	vim.lsp.commands["_ltex.hideFalsePositives"]({ arguments = { { falsePositives = { ["en-US"] = { "fp-string" } } } } })
+
+	vim.notify = orig
+	eq(#notified, 1)
+	eq(notified[1]:find("en%-US") ~= nil, true)
+end
+
 T["lsp"]["disableRules sends didChangeConfiguration"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local lsp_config = loadfile(lsp_file)()
