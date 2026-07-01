@@ -274,28 +274,6 @@ T["lsp"]["addToDictionary notifies words added"] = function()
 	eq(notified[1]:find("testword") ~= nil, true)
 end
 
-T["lsp"]["pickLanguage Other... triggers input and sets language"] = function()
-	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
-	local lsp_config = loadfile(lsp_file)()
-	attach(lsp_config)
-
-	local notified = {}
-	local orig_notify = vim.notify
-	local orig_select = vim.ui.select
-	local orig_input = vim.ui.input
-	vim.notify = function(msg, _, _) table.insert(notified, msg) end
-	vim.ui.select = function(_, _, cb) cb("Other...") end
-	vim.ui.input = function(_, cb) cb("pt-BR") end
-
-	run_ltex("_ltex.pickLanguage")
-
-	vim.notify = orig_notify
-	vim.ui.select = orig_select
-	vim.ui.input = orig_input
-	eq(#notified, 1)
-	eq(notified[1]:find("pt%-BR") ~= nil, true)
-end
-
 T["lsp"]["pickLanguage notifies language set via select"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local lsp_config = loadfile(lsp_file)()
@@ -316,20 +294,24 @@ T["lsp"]["pickLanguage notifies language set via select"] = function()
 	eq(notified[1]:find("pt%-BR") ~= nil, true)
 end
 
-T["lsp"]["pickLanguage always uses vim.ui.select"] = function()
+T["lsp"]["pickLanguage warns when no languages configured"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local lsp_config = loadfile(lsp_file)()
 	attach(lsp_config)
 
-	local input_called = false
+	local warned = false
 	local select_called = false
-	vim.ui.input = function() input_called = true end
+	local orig_notify = vim.notify
+	vim.notify = function(_, level, _)
+		if level == vim.log.levels.WARN then warned = true end
+	end
 	vim.ui.select = function() select_called = true end
 
 	run_ltex("_ltex.pickLanguage")
 
-	eq(select_called, true)
-	eq(input_called, false)
+	vim.notify = orig_notify
+	eq(warned, true)
+	eq(select_called, false)
 end
 
 T["lsp"]["pickLanguage uses vim.ui.select when languages is set"] = function()
@@ -352,19 +334,17 @@ end
 T["lsp"]["notes.ltex_pick_language triggers the registered command"] = function()
 	local lsp_file = vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua")
 	local lsp_config = loadfile(lsp_file)()
+	lsp_config.settings.ltex.languages = { "en-US" }
 	attach(lsp_config)
 
-	local input_called = false
+	local select_called = false
 	local orig_select = vim.ui.select
-	local orig_input = vim.ui.input
-	vim.ui.select = function(_, _, cb) cb("Other...") end
-	vim.ui.input = function() input_called = true end
+	vim.ui.select = function() select_called = true end
 
 	require("notes").ltex_pick_language()
 
 	vim.ui.select = orig_select
-	vim.ui.input = orig_input
-	eq(input_called, true)
+	eq(select_called, true)
 end
 
 T["lsp"]["notes.ltex_pick_language warns when command not registered"] = function()
