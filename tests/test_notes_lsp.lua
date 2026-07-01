@@ -1,20 +1,20 @@
----@diagnostic disable: duplicate-set-field, missing-parameter, need-check-nil
 local test = require("mini.test")
 local new_set, eq = test.new_set, test.expect.equality
 
 local T = new_set()
 
+local vlsp = vim.lsp --[[@as table]]
 local original_buf_request_all
 local original_get_client_by_id
 
 local function restore_all()
 	require("notes.lsp").reset_code_actions()
 	if original_buf_request_all then
-		vim.lsp.buf_request_all = original_buf_request_all
+		vlsp.buf_request_all = original_buf_request_all
 		original_buf_request_all = nil
 	end
 	if original_get_client_by_id then
-		vim.lsp.get_client_by_id = original_get_client_by_id
+		vlsp.get_client_by_id = original_get_client_by_id
 		original_get_client_by_id = nil
 	end
 end
@@ -30,7 +30,7 @@ end
 ---@param result_actions table[]
 local function install_test_request_mock(result_actions)
 	original_buf_request_all = vim.lsp.buf_request_all
-	vim.lsp.buf_request_all = function(_, method, _, callback)
+	vlsp.buf_request_all = function(_, method, _, callback)
 		if method == "textDocument/codeAction" then callback({
 			[1] = { result = result_actions, context = { client_id = 1 } },
 		}, nil) end
@@ -69,12 +69,12 @@ T["notes lsp"]["injects Pick language for ltex_plus client with languages"] = fu
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
-	vim.lsp.get_client_by_id = function() return mock_client({ "en-US", "pt-BR" }) end
+	vlsp.get_client_by_id = function() return mock_client({ "en-US", "pt-BR" }) end
 
 	install_test_request_mock({ { title = "server action" } })
 	notes_lsp.setup_code_actions()
 
-	local results = nil
+	local results
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
 	restore_all()
@@ -91,7 +91,7 @@ T["notes lsp"]["always injects for ltex_plus regardless of languages"] = functio
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
-	vim.lsp.get_client_by_id = function() return mock_client({}) end
+	vlsp.get_client_by_id = function() return mock_client({}) end
 
 	install_test_request_mock({ { title = "server action" } })
 	notes_lsp.setup_code_actions()
@@ -110,7 +110,7 @@ T["notes lsp"]["does not inject for non-ltex clients"] = function()
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
-	vim.lsp.get_client_by_id = function() return { name = "marksman", config = { settings = {} } } end
+	vlsp.get_client_by_id = function() return { name = "marksman", config = { settings = {} } } end
 
 	install_test_request_mock({ { title = "server action" } })
 	notes_lsp.setup_code_actions()
@@ -129,7 +129,7 @@ T["notes lsp"]["does not double-inject if Pick language already present"] = func
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
-	vim.lsp.get_client_by_id = function() return mock_client({ "en-US" }) end
+	vlsp.get_client_by_id = function() return mock_client({ "en-US" }) end
 
 	install_test_request_mock({
 		{ title = "existing", command = { command = "_ltex.pickLanguage" } },
