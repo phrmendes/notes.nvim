@@ -33,7 +33,7 @@ local function install_test_request_mock(result_actions)
 	vlsp.buf_request_all = function(_, method, _, callback)
 		if method == "textDocument/codeAction" then callback({
 			[1] = { result = result_actions, context = { client_id = 1 } },
-		}, nil) end
+		}) end
 	end
 end
 

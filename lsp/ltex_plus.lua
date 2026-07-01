@@ -1,6 +1,6 @@
 ---@class LtexSettings
 ---@field language string Current language code
----@field languages string[] Picker list (additionals from user config, never sent to ltex)
+---@field languages string[] Picker list (includes default; never sent to ltex)
 ---@field dictionary table<string, string[]> Words per language
 ---@field disabledRules table<string, string[]> Disabled rule IDs per language
 ---@field hiddenFalsePositives table<string, string[]> Hidden false positives per language

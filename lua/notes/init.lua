@@ -306,9 +306,8 @@ function notes.grep(path) picker.grep(path) end
 --- Trigger the ltex-ls-plus language picker
 ---
 --- Calls `_ltex.pickLanguage` if ltex-ls-plus is attached to the current
---- buffer. With an empty `languages` list the server asks for a free-form
---- language code via `vim.ui.input`; otherwise shows a `vim.ui.select` list
---- of the configured languages.
+--- buffer. Shows a `vim.ui.select` list of the configured languages (with the
+--- active language marked). Warns if no languages are configured in setup.
 ---
 ---@usage >lua
 ---   require('notes').ltex_pick_language()
