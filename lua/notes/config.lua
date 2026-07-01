@@ -42,8 +42,10 @@ local servers = {
 		settings.enabled = nil
 
 		local lang = type(settings.languages) == "table" and settings.languages or {}
-		settings.language = lang.default or settings.language or "en-US"
-		settings.languages = lang.additionals or {}
+		local default_lang = lang.default or "en-US"
+		local additionals = type(lang.additionals) == "table" and lang.additionals or {}
+		settings.language = default_lang
+		settings.languages = vim.list_extend({ default_lang }, vim.tbl_filter(function(l) return l ~= default_lang end, additionals))
 
 		local persisted = lsp.read_persisted_data()
 		settings.dictionary = persisted.dictionary

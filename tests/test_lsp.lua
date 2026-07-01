@@ -109,10 +109,13 @@ T["lsp"]["can configure ltex_plus languages via setup"] = function()
 	child.lua(string.format([[require("notes.config").setup({ path = %q, lsp = { marksman = { enabled = false }, ltex_plus = { enabled = true, languages = { default = "en-US", additionals = { "pt-BR", "fr-FR" } } } } })]], temp_dir))
 
 	local captured = child.lua_get("_G.captured_lsp_config")
+	local langs = captured.opts.settings.ltex.languages
 	eq(captured.name, "ltex_plus")
 	eq(captured.opts.settings.ltex.language, "en-US")
-	eq(captured.opts.settings.ltex.languages[1], "pt-BR")
-	eq(captured.opts.settings.ltex.languages[2], "fr-FR")
+	eq(vim.tbl_contains(langs, "en-US"), true)
+	eq(vim.tbl_contains(langs, "pt-BR"), true)
+	eq(vim.tbl_contains(langs, "fr-FR"), true)
+	eq(#langs, 3)
 	eq(captured.opts.settings.ltex.notes_languages, nil)
 	eq(#child.lua_get("_G.captured_lsp_enable"), 1)
 end
