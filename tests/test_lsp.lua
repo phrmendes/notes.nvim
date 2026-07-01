@@ -13,9 +13,9 @@ local function make_client(lsp_config)
 	local client = {
 		config = lsp_config,
 		handlers = {},
-		_notified = {},
+		notified = {},
 	}
-	function client.notify(_, method, params) table.insert(client._notified, { method = method, params = params }) end
+	function client.notify(_, method, params) table.insert(client.notified, { method = method, params = params }) end
 	function client.request() end
 	return client
 end
@@ -248,10 +248,10 @@ T["ltex commands"]["addToDictionary sends didChangeConfiguration"] = function()
 	local lsp_config = load_ltex()
 	local client = attach(lsp_config)
 
-	local before = #client._notified
+	local before = #client.notified
 	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
 
-	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
+	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client.notified)
 	eq(#after_calls > before, true)
 end
 
@@ -262,7 +262,7 @@ T["ltex commands"]["reload_settings does not send languages to ltex"] = function
 
 	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
 
-	local notif = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
+	local notif = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client.notified)
 	eq(notif[1].params.settings.languages, nil)
 end
 
@@ -300,10 +300,10 @@ T["ltex commands"]["disableRules sends didChangeConfiguration"] = function()
 	local lsp_config = load_ltex()
 	local client = attach(lsp_config)
 
-	local before = #client._notified
+	local before = #client.notified
 	run_ltex("_ltex.disableRules", { ruleIds = { ["en-US"] = { "RULE_X" } } })
 
-	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client._notified)
+	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client.notified)
 	eq(#after_calls > before, true)
 end
 
@@ -430,7 +430,7 @@ T["ltex commands"]["pickLanguage strips the mark from the current language on se
 	local orig_select = vim.ui.select
 	patch(vim.ui, "select", function(_, _, cb) cb("pt-BR [*]") end)
 
-	client._notified = {}
+	client.notified = {}
 	run_ltex("_ltex.pickLanguage")
 
 	patch(vim.ui, "select", orig_select)
