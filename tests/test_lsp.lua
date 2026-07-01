@@ -7,14 +7,13 @@ local child, T = utils.new_child_set()
 local function patch(t, k, v) rawset(t, k, v) end
 local function load_ltex() return loadfile(vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua"))() end
 
--- ltex command test helpers
-
 local function make_client(lsp_config)
 	local client = {
 		config = lsp_config,
 		handlers = {},
 		notified = {},
 	}
+
 	function client.notify(_, method, params) table.insert(client.notified, { method = method, params = params }) end
 	function client.request() end
 	return client
@@ -30,8 +29,6 @@ local function run_ltex(cmd, arguments)
 	local handler = vim.lsp.commands[cmd] --[[@as fun(command: table)]]
 	handler({ arguments = { arguments or {} } })
 end
-
--- injection test helpers
 
 local original_buf_request_all
 local original_get_client_by_id
@@ -65,8 +62,6 @@ local function install_test_request_mock(result_actions)
 		}) end
 	end)
 end
-
--- ── lsp setup ────────────────────────────────────────────────────────────────
 
 T["lsp setup"] = new_set()
 
@@ -170,8 +165,6 @@ T["lsp setup"]["can configure ltex_plus languages via setup"] = function()
 	eq(#child.lua_get("_G.captured_lsp_enable"), 1)
 end
 
--- ── lsp config ───────────────────────────────────────────────────────────────
-
 T["lsp config"] = new_set()
 
 T["lsp config"]["marksman.lua is valid"] = function()
@@ -226,8 +219,6 @@ T["lsp config"]["ltex_plus uses single_file_support"] = function()
 	eq(config.root_dir, nil)
 	eq(config.root_markers, nil)
 end
-
--- ── ltex commands ─────────────────────────────────────────────────────────────
 
 T["ltex commands"] = new_set({
 	hooks = {
@@ -468,8 +459,6 @@ T["ltex commands"]["notes.ltex_pick_language warns when command not registered"]
 	patch(vim, "notify", orig_notify)
 	eq(warned, true)
 end
-
--- ── ltex injection ────────────────────────────────────────────────────────────
 
 T["ltex injection"] = new_set()
 
