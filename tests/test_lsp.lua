@@ -2,10 +2,10 @@ local test = require("mini.test")
 local utils = dofile("tests/utils.lua")
 local new_set, eq = test.new_set, test.expect.equality
 
-local vimx = vim --[[@as table]]
-local vui = vim.ui --[[@as table]]
-local vfn = vim.fn --[[@as table]]
-local vuv = vim.uv --[[@as table]]
+local vimx = vim --[[@as any]]
+local vui = vim.ui --[[@as any]]
+local vfn = vim.fn --[[@as any]]
+local vuv = vim.uv --[[@as any]]
 
 local child, T = utils.new_child_set()
 
@@ -196,7 +196,10 @@ local function attach(lsp_config)
 	return client
 end
 
-local function run_ltex(cmd, arguments) vim.lsp.commands[cmd]({ arguments = { arguments or {} } }) end
+local function run_ltex(cmd, arguments)
+	local handler = vim.lsp.commands[cmd] --[[@as fun(a: any)]]
+	handler({ arguments = { arguments or {} } })
+end
 
 T["lsp"]["addToDictionary sends didChangeConfiguration"] = function()
 	local lsp_config = load_ltex()
