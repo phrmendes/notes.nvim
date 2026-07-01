@@ -93,23 +93,26 @@ local function set_language(client, settings, lang)
 	reload_settings(client, settings)
 end
 
---- Show the language picker, falling back to free-form input when no list is configured.
+local default_languages = { "de-DE", "en-GB", "en-US", "es", "fr", "it", "nl", "pl", "pt-BR", "pt-PT", "ru", "zh" }
+
+--- Show the language picker. Uses the user-configured list or a curated default.
+--- "Other..." always appears at the end for free-form input.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
 local function pick_language(client, settings)
-	local picker_languages = settings.languages
-	if #picker_languages == 0 then
-		vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
-			if not lang or lang == "" then return end
-			set_language(client, settings, lang)
-		end)
-		return
-	end
-
-	local items = vim.iter(picker_languages):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
+	local base = #settings.languages > 0 and settings.languages or default_languages
+	local items = vim.iter(base):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
+	table.insert(items, "Other...")
 
 	vim.ui.select(items, { prompt = "Language" }, function(choice)
 		if not choice then return end
+		if choice == "Other..." then
+			vim.ui.input({ prompt = "Language code: ", default = settings.language }, function(lang)
+				if not lang or lang == "" then return end
+				set_language(client, settings, lang)
+			end)
+			return
+		end
 		local lang = choice:gsub(vim.pesc(mark) .. "$", "")
 		set_language(client, settings, lang)
 	end)
