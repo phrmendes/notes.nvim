@@ -101,6 +101,7 @@ T["notes lsp"]["always injects for ltex_plus regardless of languages"] = functio
 
 	restore_all()
 
+	assert(results[1])
 	eq(#results[1].result, 2)
 	eq(results[1].result[2].title, "Pick language")
 end
@@ -120,6 +121,7 @@ T["notes lsp"]["does not inject for non-ltex clients"] = function()
 
 	restore_all()
 
+	assert(results[1])
 	eq(#results[1].result, 1)
 	eq(results[1].result[1].title, "server action")
 end
@@ -141,6 +143,7 @@ T["notes lsp"]["does not double-inject if Pick language already present"] = func
 
 	restore_all()
 
+	assert(results[1])
 	eq(#results[1].result, 1)
 end
 
