@@ -2,13 +2,9 @@ local test = require("mini.test")
 local utils = dofile("tests/utils.lua")
 local new_set, eq = test.new_set, test.expect.equality
 
-local vimx = vim --[[@as any]]
-local vui = vim.ui --[[@as any]]
-local vfn = vim.fn --[[@as any]]
-local vuv = vim.uv --[[@as any]]
-
 local child, T = utils.new_child_set()
 
+local function patch(t, k, v) rawset(t, k, v) end
 local function load_ltex() return loadfile(vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua"))() end
 
 T["lsp"] = new_set({
@@ -16,12 +12,12 @@ T["lsp"] = new_set({
 		pre_case = function()
 			_G.orig_writefile = vim.fn.writefile
 			_G.orig_mkdir = vim.fn.mkdir
-			vfn.writefile = function() return 0 end
-			vfn.mkdir = function() return 1 end
+			patch(vim.fn, "writefile", function() return 0 end)
+			patch(vim.fn, "mkdir", function() return 1 end)
 		end,
 		post_case = function()
-			vfn.writefile = _G.orig_writefile
-			vfn.mkdir = _G.orig_mkdir
+			patch(vim.fn, "writefile", _G.orig_writefile)
+			patch(vim.fn, "mkdir", _G.orig_mkdir)
 		end,
 	},
 })
@@ -192,12 +188,12 @@ end
 
 local function attach(lsp_config)
 	local client = make_client(lsp_config)
-	lsp_config.on_attach(client --[[@as any]], 1)
+	lsp_config.on_attach(client --[[@as vim.lsp.Client]], 1)
 	return client
 end
 
 local function run_ltex(cmd, arguments)
-	local handler = vim.lsp.commands[cmd] --[[@as fun(a: any)]]
+	local handler = vim.lsp.commands[cmd] --[[@as fun(command: table)]]
 	handler({ arguments = { arguments or {} } })
 end
 
@@ -229,11 +225,11 @@ T["lsp"]["disableRules notifies rule disabled"] = function()
 
 	local notified = {}
 	local orig = vim.notify
-	vimx.notify = function(msg, _, _) table.insert(notified, msg) end
+	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
 
 	run_ltex("_ltex.disableRules", { ruleIds = { ["en-US"] = { "RULE_X" } } })
 
-	vimx.notify = orig
+	patch(vim, "notify", orig)
 	eq(#notified, 1)
 	eq(notified[1]:find("RULE_X") ~= nil, true)
 end
@@ -244,11 +240,11 @@ T["lsp"]["hideFalsePositives notifies false positive hidden"] = function()
 
 	local notified = {}
 	local orig = vim.notify
-	vimx.notify = function(msg, _, _) table.insert(notified, msg) end
+	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
 
 	run_ltex("_ltex.hideFalsePositives", { falsePositives = { ["en-US"] = { "fp-string" } } })
 
-	vimx.notify = orig
+	patch(vim, "notify", orig)
 	eq(#notified, 1)
 	eq(notified[1]:find("en%-US") ~= nil, true)
 end
@@ -270,11 +266,11 @@ T["lsp"]["addToDictionary notifies words added"] = function()
 
 	local notified = {}
 	local orig = vim.notify
-	vimx.notify = function(msg, _, _) table.insert(notified, msg) end
+	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
 
 	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
 
-	vimx.notify = orig
+	patch(vim, "notify", orig)
 	eq(#notified, 1)
 	eq(notified[1]:find("testword") ~= nil, true)
 end
@@ -287,13 +283,13 @@ T["lsp"]["pickLanguage notifies language set via select"] = function()
 	local notified = {}
 	local orig_notify = vim.notify
 	local orig_select = vim.ui.select
-	vimx.notify = function(msg, _, _) table.insert(notified, msg) end
-	vui.select = function(_, _, cb) cb("pt-BR") end
+	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
+	patch(vim.ui, "select", function(_, _, cb) cb("pt-BR") end)
 
 	run_ltex("_ltex.pickLanguage")
 
-	vimx.notify = orig_notify
-	vui.select = orig_select
+	patch(vim, "notify", orig_notify)
+	patch(vim.ui, "select", orig_select)
 	eq(#notified, 1)
 	eq(notified[1]:find("pt%-BR") ~= nil, true)
 end
@@ -305,14 +301,16 @@ T["lsp"]["pickLanguage warns when no languages configured"] = function()
 	local warned = false
 	local select_called = false
 	local orig_notify = vim.notify
-	vimx.notify = function(_, level, _)
+	local orig_select = vim.ui.select
+	patch(vim, "notify", function(_, level, _)
 		if level == vim.log.levels.WARN then warned = true end
-	end
-	vui.select = function() select_called = true end
+	end)
+	patch(vim.ui, "select", function() select_called = true end)
 
 	run_ltex("_ltex.pickLanguage")
 
-	vimx.notify = orig_notify
+	patch(vim, "notify", orig_notify)
+	patch(vim.ui, "select", orig_select)
 	eq(warned, true)
 	eq(select_called, false)
 end
@@ -324,11 +322,15 @@ T["lsp"]["pickLanguage uses vim.ui.select when languages is set"] = function()
 
 	local input_called = false
 	local select_called = false
-	vui.input = function() input_called = true end
-	vui.select = function() select_called = true end
+	local orig_input = vim.ui.input
+	local orig_select = vim.ui.select
+	patch(vim.ui, "input", function() input_called = true end)
+	patch(vim.ui, "select", function() select_called = true end)
 
 	run_ltex("_ltex.pickLanguage")
 
+	patch(vim.ui, "input", orig_input)
+	patch(vim.ui, "select", orig_select)
 	eq(select_called, true)
 	eq(input_called, false)
 end
@@ -340,28 +342,28 @@ T["lsp"]["notes.ltex_pick_language triggers the registered command"] = function(
 
 	local select_called = false
 	local orig_select = vim.ui.select
-	vui.select = function() select_called = true end
+	patch(vim.ui, "select", function() select_called = true end)
 
 	require("notes").ltex_pick_language()
 
-	vui.select = orig_select
+	patch(vim.ui, "select", orig_select)
 	eq(select_called, true)
 end
 
 T["lsp"]["notes.ltex_pick_language warns when command not registered"] = function()
 	local orig_commands = vim.lsp.commands
-	vim.lsp.commands = {}
+	patch(vim.lsp, "commands", {})
 
 	local warned = false
 	local orig_notify = vim.notify
-	vimx.notify = function(_, level, _)
+	patch(vim, "notify", function(_, level, _)
 		if level == vim.log.levels.WARN then warned = true end
-	end
+	end)
 
 	require("notes").ltex_pick_language()
 
-	vim.lsp.commands = orig_commands
-	vimx.notify = orig_notify
+	patch(vim.lsp, "commands", orig_commands)
+	patch(vim, "notify", orig_notify)
 	eq(warned, true)
 end
 
@@ -384,19 +386,19 @@ T["lsp"]["read_persisted_data populates settings on attach"] = function()
 
 	local orig_fs_stat = vim.uv.fs_stat
 	local orig_readfile = vim.fn.readfile
-	vuv.fs_stat = function() return { type = "file" } end
-	vfn.readfile = function(path, _, _)
+	patch(vim.uv, "fs_stat", function() return { type = "file" } end)
+	patch(vim.fn, "readfile", function(path, _, _)
 		local content = "{}"
 		for category, data in pairs(read_data) do
 			if path and path:find(category) then content = vim.fn.json_encode(data) end
 		end
 		return { content }
-	end
+	end)
 
 	attach(lsp_config)
 
-	vuv.fs_stat = orig_fs_stat
-	vfn.readfile = orig_readfile
+	patch(vim.uv, "fs_stat", orig_fs_stat)
+	patch(vim.fn, "readfile", orig_readfile)
 
 	eq(lsp_config.settings.ltex.dictionary["en-US"][1], "foo")
 	eq(lsp_config.settings.ltex.dictionary["en-US"][2], "bar")
@@ -411,12 +413,12 @@ T["lsp"]["pickLanguage strips the mark from the current language on select"] = f
 	local client = attach(lsp_config)
 
 	local orig_select = vim.ui.select
-	vui.select = function(_, _, cb) cb("pt-BR [*]") end
+	patch(vim.ui, "select", function(_, _, cb) cb("pt-BR [*]") end)
 
 	client._notified = {}
 	run_ltex("_ltex.pickLanguage")
 
-	vui.select = orig_select
+	patch(vim.ui, "select", orig_select)
 	eq(lsp_config.settings.ltex.language, "pt-BR")
 end
 
