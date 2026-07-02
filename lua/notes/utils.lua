@@ -182,7 +182,6 @@ end
 ---@return string
 utils.coerce_to_string = function(item)
 	if type(item) == "string" then return item end
-	if vim.islist(item) then return vim.fn.blob2str(item) end
 	return tostring(item)
 end
 
