@@ -13,15 +13,11 @@ local journal = {}
 ---@return integer | nil time
 ---@return string | nil error_message
 local function resolve_time(date)
-	if not date then
-		return os.time()
-	end
+	if not date then return os.time() end
 
 	local time = utils.parse_date(date)
 
-	if not time then
-		return nil, "Invalid date: " .. date .. " (expected YYYY-MM-DD)"
-	end
+	if not time then return nil, "Invalid date: " .. date .. " (expected YYYY-MM-DD)" end
 
 	return time
 end
@@ -32,7 +28,8 @@ end
 ---@return string title
 ---@return string full_path
 local function build_path(time, journal_path)
-	local title = tostring(os.date(config.journal.title_format, time))
+	local fmt = config.journal.title_format or "%Y-%m-%d"
+	local title = tostring(os.date(fmt, time))
 	local filename = os.date("%Y%m%d", time) .. ".md"
 	local path = vim.fs.joinpath(journal_path, filename)
 	return title, path
@@ -47,9 +44,7 @@ local function write_entry(path, title, tags)
 	local lines = { "# " .. title, "" }
 	local all_tags = "#journal"
 
-	if tags and tags ~= "" then
-		all_tags = all_tags .. ", " .. utils.create_tags(tags, ",")
-	end
+	if tags and tags ~= "" then all_tags = all_tags .. ", " .. utils.create_tags(tags, ",") end
 
 	table.insert(lines, "**Tags:** " .. all_tags)
 	table.insert(lines, "")

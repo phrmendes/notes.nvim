@@ -15,7 +15,7 @@
 
 ---@class NotesJournalConfig
 ---@field path string | nil
----@field title_format string
+---@field title_format? string
 
 ---@class NotesLtexLanguages
 ---@field default? string Starting language code (maps to ltex `language`, default: "en-US")
