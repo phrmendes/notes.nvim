@@ -43,9 +43,9 @@ local function write(name, data)
 	vim.fn.writefile({ encoded }, vim.fs.joinpath(ltex_path, name .. ".json"))
 end
 
---- Reload ltex settings after a change. Strips `languages` from the payload so ltex
---- never sees the picker list — preventing it from skipping the document check when
---- the current `language` is a member of `languages`.
+--- Reload ltex settings after a change. Strips `languages` and `notes_languages` from
+--- the payload so ltex never sees the picker list — preventing it from skipping the
+--- document check when the current `language` is a member of `languages`.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
 local function reload_settings(client, settings)
@@ -131,8 +131,9 @@ end
 local function make_commands(client, bufnr)
 	local settings = get_settings(client)
 
+	local lang_list = settings.notes_languages or settings.languages or {}
+
 	vim.iter(ltex_data.read_all()):each(function(setting, langs)
-		local lang_list = settings.notes_languages or settings.languages or {}
 		vim.iter(lang_list):each(function(lang) settings[setting][lang] = langs[lang] or {} end)
 	end)
 

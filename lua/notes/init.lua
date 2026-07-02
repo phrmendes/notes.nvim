@@ -129,6 +129,10 @@
 --- `vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`. The
 --- plugin's `setup()` triggers these enables automatically.
 ---
+--- `lsp/ltex_plus.lua` depends on `lua/notes/ltex_data.lua`, which ships
+--- with the plugin — using the lsp file standalone requires the plugin's
+--- full `lua/` tree on `runtimepath`.
+---
 --- ## marksman ~
 ---
 --- Markdown LSP — completion, hover, cross-file references, symbols.
@@ -145,7 +149,7 @@
 --- 2. **Code actions** — server provides 4 quick fixes (accept suggestion,
 ---    add to dictionary, disable rule, hide false positive). The plugin
 ---    adds one more: "Pick language" (opens `vim.ui.select` with
----    `settings.languages`, current language marked `[*]`).
+---    `config.ltex_languages`, current language marked `[*]`).
 ---
 --- 3. **LSP commands** — registered in `on_attach`:
 ---
@@ -212,10 +216,10 @@
 ---
 --- Run `:checkhealth notes` to verify installation:
 ---
---- - Configuration validity
+--- - Configuration validity (path, directory existence)
 --- - `marksman` and `ltex-ls-plus` binaries on PATH
---- - Persisted dictionary sizes
---- - LSP server attachment status
+--- - Persisted data sizes (dictionary, rules, false positives)
+--- - LSP attachment hint (buffer-scoped; check `settings.ltex` for configuration)
 
 local config = require("notes.config")
 local journal = require("notes.journal")

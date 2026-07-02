@@ -1,6 +1,6 @@
 --- Persistent data reader for ltex dictionary, disabled rules, and hidden false positives.
 ---
---- Reads/writes JSON files at `~/.local/share/nvim/ltex/` for three categories:
+--- Reads JSON files at `~/.local/share/nvim/ltex/` for three categories:
 --- `dictionary`, `disabledRules`, `hiddenFalsePositives`. Both `lua/notes/lsp.lua`
 --- and `lsp/ltex_plus.lua` use this module instead of defining their own readers.
 
