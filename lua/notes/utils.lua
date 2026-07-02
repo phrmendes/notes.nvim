@@ -6,7 +6,7 @@
 local utils = {}
 
 --- Normalizes a word by converting it to lowercase, then replacing accented
---- their unaccented equivalents, and replacing spaces and non-word characters with hyphens.
+--- characters with their unaccented equivalents, and replacing spaces and non-word characters with hyphens.
 ---@param input string The input to normalize.
 ---@return string normalized_string The normalized input.
 utils.normalize = function(input)

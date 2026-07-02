@@ -460,22 +460,23 @@ T["ltex commands"]["notes.ltex_pick_language warns when command not registered"]
 	eq(warned, true)
 end
 
-T["ltex injection"] = new_set()
+T["ltex injection"] = new_set({
+	hooks = {
+		pre_case = function() restore_all() end,
+		post_case = function() restore_all() end,
+	},
+})
 
 T["ltex injection"]["setup_code_actions patches vim.lsp.buf_request_all"] = function()
-	restore_all()
 	local notes_lsp = require("notes.lsp")
 
 	local original = vim.lsp.buf_request_all
 	notes_lsp.setup_code_actions()
 
 	eq(vim.lsp.buf_request_all ~= original, true)
-
-	restore_all()
 end
 
 T["ltex injection"]["setup_code_actions is idempotent"] = function()
-	restore_all()
 	local notes_lsp = require("notes.lsp")
 
 	notes_lsp.setup_code_actions()
@@ -483,12 +484,9 @@ T["ltex injection"]["setup_code_actions is idempotent"] = function()
 	notes_lsp.setup_code_actions()
 
 	eq(vim.lsp.buf_request_all, patched)
-
-	restore_all()
 end
 
 T["ltex injection"]["injects Pick language for ltex_plus client"] = function()
-	restore_all()
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
@@ -500,8 +498,6 @@ T["ltex injection"]["injects Pick language for ltex_plus client"] = function()
 	local results
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
-	restore_all()
-
 	assert(results[1])
 	assert(results[1].result[2])
 	eq(#results[1].result, 2)
@@ -510,7 +506,6 @@ T["ltex injection"]["injects Pick language for ltex_plus client"] = function()
 end
 
 T["ltex injection"]["always injects for ltex_plus regardless of languages"] = function()
-	restore_all()
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
@@ -522,15 +517,12 @@ T["ltex injection"]["always injects for ltex_plus regardless of languages"] = fu
 	local results
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
-	restore_all()
-
 	assert(results[1])
 	eq(#results[1].result, 2)
 	eq(results[1].result[2].title, "Pick language")
 end
 
 T["ltex injection"]["does not inject for non-ltex clients"] = function()
-	restore_all()
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
@@ -542,15 +534,12 @@ T["ltex injection"]["does not inject for non-ltex clients"] = function()
 	local results
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
-	restore_all()
-
 	assert(results[1])
 	eq(#results[1].result, 1)
 	eq(results[1].result[1].title, "server action")
 end
 
 T["ltex injection"]["does not double-inject if Pick language already present"] = function()
-	restore_all()
 	local notes_lsp = require("notes.lsp")
 
 	original_get_client_by_id = vim.lsp.get_client_by_id
@@ -563,8 +552,6 @@ T["ltex injection"]["does not double-inject if Pick language already present"] =
 
 	local results
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	restore_all()
 
 	assert(results[1])
 	eq(#results[1].result, 1)

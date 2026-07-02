@@ -1,21 +1,21 @@
 local test = require("mini.test")
 local eq = test.expect.equality
 
-local M = {}
+local utils = {}
 
 ---@type { date_prefix: string, id_suffix: string, md_end: string }
-M.patterns = {
+utils.patterns = {
 	date_prefix = "^%d%d%d%d%d%d%d%d",
 	id_suffix = "[A-Z][A-Z][A-Z][A-Z]",
 	md_end = "%.md$",
 }
 
-M.mock = {}
+utils.mock = {}
 
 --- Create a temporary directory for tests
 ---@param child MiniTest.child
 ---@return string temp_dir
-M.create_temp_dir = function(child)
+utils.create_temp_dir = function(child)
 	local temp_id = child.lua_get("string.format('%d_%d', vim.uv.now(), math.random(1000, 9999))")
 	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
 	child.lua(string.format("vim.fn.mkdir(%q, 'p')", temp_dir))
@@ -25,19 +25,19 @@ end
 --- Assert that a file exists
 ---@param child MiniTest.child
 ---@param file_path string
-M.assert_file_exists = function(child, file_path) eq(child.lua_get(string.format("vim.uv.fs_stat(%q) ~= nil", file_path)), true) end
+utils.assert_file_exists = function(child, file_path) eq(child.lua_get(string.format("vim.uv.fs_stat(%q) ~= nil", file_path)), true) end
 
 --- Read file content
 ---@param child MiniTest.child
 ---@param file_path string
 ---@return string[]
-M.read_file = function(child, file_path) return child.lua_get(string.format("vim.fn.readfile(%q)", file_path)) end
+utils.read_file = function(child, file_path) return child.lua_get(string.format("vim.fn.readfile(%q)", file_path)) end
 
 --- Create note files in a directory
 ---@param child MiniTest.child
 ---@param dir string
 ---@param files table<string, string> filename -> content
-M.create_note_files = function(child, dir, files)
+utils.create_note_files = function(child, dir, files)
 	vim.iter(files):each(function(filename, content)
 		local full_path = vim.fs.joinpath(dir, filename)
 		local content_table = vim.iter(vim.split(content, "\n")):map(function(line) return string.format("%q", line) end):totable()
@@ -50,7 +50,7 @@ end
 --- with restart, cleanup, and stop hooks.
 ---@return table child The child Neovim process
 ---@return table T The test set with hooks configured
-M.new_child_set = function()
+utils.new_child_set = function()
 	local child = test.new_child_neovim()
 	local T = test.new_set({
 		hooks = {
@@ -75,7 +75,7 @@ end
 
 --- Mock vim.ui.select to capture items without selecting
 ---@param child MiniTest.child
-function M.mock.select(child)
+function utils.mock.select(child)
 	child.lua([[
 		_G.mocked_select = {}
 		vim.ui.select = function(items, opts, callback)
@@ -87,17 +87,17 @@ end
 --- Get items captured by mock.select
 ---@param child MiniTest.child
 ---@return table
-function M.mock.select_items(child) return child.lua_get("_G.mocked_select[1]") end
+function utils.mock.select_items(child) return child.lua_get("_G.mocked_select[1]") end
 
 --- Mock vim.ui.input with a single canned response
 ---@param child MiniTest.child
 ---@param response string
-function M.mock.input(child, response) M.mock.sequential_input(child, { response }) end
+function utils.mock.input(child, response) utils.mock.sequential_input(child, { response }) end
 
 --- Mock vim.ui.input with sequential responses
 ---@param child MiniTest.child
 ---@param responses string[]
-function M.mock.sequential_input(child, responses)
+function utils.mock.sequential_input(child, responses)
 	local quoted = vim.iter(responses):map(function(r) return string.format("%q", r) end):totable()
 
 	child.lua(string.format(
@@ -115,7 +115,7 @@ end
 
 --- Mock vim.notify to capture messages without displaying
 ---@param child MiniTest.child
-function M.mock.notify(child)
+function utils.mock.notify(child)
 	child.lua([[
 		_G.mocked_notify = {}
 		vim.notify = function(msg, level)
@@ -127,11 +127,11 @@ end
 --- Get the last message captured by mock.notify
 ---@param child MiniTest.child
 ---@return string|nil
-function M.mock.notify_message(child) return child.lua_get("_G.mocked_notify[1]") end
+function utils.mock.notify_message(child) return child.lua_get("_G.mocked_notify[1]") end
 
 --- Mock vim.cmd to capture commands without executing
 ---@param child MiniTest.child
-function M.mock.cmd(child)
+function utils.mock.cmd(child)
 	child.lua([[
 		_G.mocked_cmds = {}
 		vim.cmd = function(cmd)
@@ -143,13 +143,13 @@ end
 --- Get commands captured by mock.cmd
 ---@param child MiniTest.child
 ---@return string[]
-function M.mock.cmds(child) return child.lua_get("_G.mocked_cmds") or {} end
+function utils.mock.cmds(child) return child.lua_get("_G.mocked_cmds") or {} end
 
 --- Setup notes configuration in the child process
 ---@param child MiniTest.child
 ---@param path string
 ---@param picker string|nil
-M.setup = function(child, path, picker)
+utils.setup = function(child, path, picker)
 	local opts = string.format("{ path = %q", path)
 	if picker then opts = opts .. string.format(', picker = "%s"', picker) end
 	opts = opts .. " }"
@@ -158,7 +158,7 @@ end
 
 --- Stub mini.pick in the child with a recording mock
 ---@param child MiniTest.child
-function M.mock_mini_pick(child)
+function utils.mock_mini_pick(child)
 	child.lua([[
 		_G.captured_start_name = nil
 		_G.captured_start_items = nil
@@ -184,9 +184,9 @@ end
 ---@param child MiniTest.child
 ---@param temp_dir string
 ---@return table
-M.journal_glob = function(child, temp_dir)
+utils.journal_glob = function(child, temp_dir)
 	local pattern = vim.fs.joinpath(temp_dir, "journal")
 	return child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", pattern))
 end
 
-return M
+return utils

@@ -189,7 +189,7 @@
 ---   └── ltex_plus.lua
 ---
 ---   scripts/init.lua       -- bootstrap for tests
----   tests/                 -- mini.test suite (61 cases)
+---   tests/                 -- mini.test suite (93 cases)
 --- <
 ---
 --- # Why no user commands ~

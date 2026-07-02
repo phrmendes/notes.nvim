@@ -6,7 +6,7 @@ local child, T = utils.new_child_set()
 
 T["journal"] = new_set()
 
-local open_journal = function(date, tags, title_format)
+local open_journal = function(date, tags, title_format, temp_dir)
 	local date_arg = date and string.format("%q", date) or "nil"
 	local tags_arg = tags and string.format("%q", tags) or "nil"
 
@@ -15,7 +15,7 @@ local open_journal = function(date, tags, title_format)
 			require("notes.config").setup({ path = %q%s })
 			require("notes").journal(%s, %s)
 		]],
-		utils.last_temp_dir or "",
+		temp_dir or "",
 		title_format and string.format([[, journal = { title_format = %q }]], title_format) or "",
 		date_arg,
 		tags_arg
@@ -61,10 +61,9 @@ vim
 	:each(function(case)
 		T["journal"][case.name] = function()
 			local temp_dir = utils.create_temp_dir(child)
-			utils.last_temp_dir = temp_dir
 
 			utils.setup(child, temp_dir)
-			open_journal(case.date, case.tags, case.title_format)
+			open_journal(case.date, case.tags, case.title_format, temp_dir)
 
 			local journal_dir = utils.journal_glob(child, temp_dir)
 			eq(#journal_dir, 1)
@@ -80,11 +79,10 @@ vim
 
 T["journal"]["opens existing entry without creating duplicate"] = function()
 	local temp_dir = utils.create_temp_dir(child)
-	utils.last_temp_dir = temp_dir
 
 	utils.setup(child, temp_dir)
-	open_journal(nil, nil, nil)
-	open_journal(nil, nil, nil)
+	open_journal(nil, nil, nil, temp_dir)
+	open_journal(nil, nil, nil, temp_dir)
 
 	local journal_dir = utils.journal_glob(child, temp_dir)
 	eq(#journal_dir, 1)
@@ -92,11 +90,10 @@ end
 
 T["journal"]["shows error for invalid date format"] = function()
 	local temp_dir = utils.create_temp_dir(child)
-	utils.last_temp_dir = temp_dir
 
 	utils.setup(child, temp_dir)
 	utils.mock.notify(child)
-	open_journal("not-a-date", nil, nil)
+	open_journal("not-a-date", nil, nil, temp_dir)
 
 	local notified = utils.mock.notify_message(child)
 	eq(notified ~= nil, true)
@@ -112,7 +109,6 @@ end
 
 T["journal"]["supports brazilian portuguese locale"] = function()
 	local temp_dir = utils.create_temp_dir(child)
-	utils.last_temp_dir = temp_dir
 
 	child.lua([[
 		local ok = pcall(os.setlocale, "pt_BR.UTF-8")
@@ -121,7 +117,7 @@ T["journal"]["supports brazilian portuguese locale"] = function()
 
 	if not child.lua_get("_G.locale_pt") then return end
 
-	open_journal("2026-04-13", nil, "%d de %B de %Y")
+	open_journal("2026-04-13", nil, "%d de %B de %Y", temp_dir)
 
 	local journal_dir = utils.journal_glob(child, temp_dir)
 	eq(#journal_dir, 1)
