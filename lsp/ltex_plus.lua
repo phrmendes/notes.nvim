@@ -1,6 +1,7 @@
 ---@class LtexSettings
 ---@field language string Current language code
----@field languages string[] Picker list (includes default; never sent to ltex)
+---@field languages string[] Server-side multi-language list (default: {}; not configured by this plugin)
+---@field notes_languages string[] Picker language list (populated by config.setup; stripped from didChangeConfiguration)
 ---@field dictionary table<string, string[]> Words per language
 ---@field disabledRules table<string, string[]> Disabled rule IDs per language
 ---@field hiddenFalsePositives table<string, string[]> Hidden false positives per language
@@ -65,6 +66,7 @@ end
 local function reload_settings(client, settings)
 	local payload = vim.tbl_extend("force", {}, settings)
 	payload.languages = nil
+	payload.notes_languages = nil
 	client:notify("workspace/didChangeConfiguration", { settings = payload })
 end
 
@@ -93,16 +95,20 @@ local function set_language(client, settings, lang)
 	reload_settings(client, settings)
 end
 
---- Show the language picker over the user-configured language list.
+--- Show the language picker over the configured language list.
+--- Reads from `config.ltex_languages` (set by notes.config), then falls back to
+--- `settings.notes_languages` or `settings.languages` for standalone use.
 --- Does nothing (with a warning) when no languages are configured.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
 local function pick_language(client, settings)
-	if #settings.languages == 0 then
+	local cfg = package.loaded["notes.config"]
+	local langs = (cfg and #cfg.ltex_languages > 0) and cfg.ltex_languages or settings.notes_languages or settings.languages or {}
+	if #langs == 0 then
 		vim.notify("ltex: no languages configured for picker", vim.log.levels.WARN)
 		return
 	end
-	local items = vim.iter(settings.languages):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
+	local items = vim.iter(langs):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
 	vim.ui.select(items, { prompt = "Language" }, function(choice)
 		if not choice then return end
 		local lang = choice:gsub(vim.pesc(mark) .. "$", "")
@@ -149,7 +155,8 @@ local function make_commands(client, bufnr)
 	local settings = get_settings(client)
 
 	vim.iter(read_persisted_data()):each(function(setting, langs)
-		vim.iter(settings.languages):each(function(lang) settings[setting][lang] = langs[lang] or {} end)
+		local lang_list = settings.notes_languages or settings.languages or {}
+		vim.iter(lang_list):each(function(lang) settings[setting][lang] = langs[lang] or {} end)
 	end)
 
 	local commands = {}

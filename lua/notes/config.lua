@@ -19,6 +19,9 @@ config.path = nil
 ---@type PickerBackend?
 config.picker = nil
 
+---@type string[]
+config.ltex_languages = {}
+
 ---@type NotesJournalConfig
 config.journal = {}
 
@@ -45,7 +48,11 @@ local servers = {
 		local default_lang = lang.default or "en-US"
 		local additionals = type(lang.additionals) == "table" and lang.additionals or {}
 		settings.language = default_lang
-		settings.languages = vim.list_extend({ default_lang }, vim.tbl_filter(function(l) return l ~= default_lang end, additionals))
+		local picker_list = vim.list_extend({ default_lang }, vim.tbl_filter(function(l) return l ~= default_lang end, additionals))
+
+		config.ltex_languages = picker_list
+		settings.languages = nil
+		settings.notes_languages = picker_list
 
 		local persisted = lsp.read_persisted_data()
 		settings.dictionary = persisted.dictionary
