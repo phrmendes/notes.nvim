@@ -51,7 +51,7 @@ end
 ---@return boolean
 local function is_pick_language(action) return action.command and action.command.command == "_ltex.pickLanguage" end
 
----@param results table<integer, { result: lsp.CodeAction[], context: lsp.HandlerContext }>
+---@param results table<integer, { result: table[], context: { client_id: integer } }>
 local function inject_pick_language(results)
 	for client_id, result in pairs(results) do
 		local client = vim.lsp.get_client_by_id(client_id)
