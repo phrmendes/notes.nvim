@@ -46,10 +46,11 @@ local function restore_all()
 end
 
 ---@param languages string[]|nil
-local function mock_client(languages)
+---@param spell_enabled boolean|nil
+local function mock_client(languages, spell_enabled)
 	return {
 		name = "ltex_plus",
-		config = { settings = { ltex = { languages = languages or { "en-US" } } } },
+		config = { settings = { ltex = { languages = languages or { "en-US" }, spellCheck = spell_enabled } } },
 	}
 end
 
@@ -508,7 +509,7 @@ T["ltex injection"]["injects Pick language for ltex_plus client"] = function()
 
 	assert(results[1])
 	assert(results[1].result[2])
-	eq(#results[1].result, 2)
+	eq(#results[1].result, 3)
 	eq(results[1].result[2].title, "Pick language")
 	eq(results[1].result[2].command.command, "_ltex.pickLanguage")
 end
@@ -526,7 +527,7 @@ T["ltex injection"]["always injects for ltex_plus regardless of languages"] = fu
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
 	assert(results[1])
-	eq(#results[1].result, 2)
+	eq(#results[1].result, 3)
 	eq(results[1].result[2].title, "Pick language")
 end
 
@@ -562,7 +563,61 @@ T["ltex injection"]["does not double-inject if Pick language already present"] =
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
 	assert(results[1])
-	eq(#results[1].result, 1)
+	eq(#results[1].result, 2)
+end
+
+T["ltex injection"]["injects Toggle spellcheck alongside Pick language"] = function()
+	local notes_lsp = require("notes.lsp")
+
+	original_get_client_by_id = vim.lsp.get_client_by_id
+	patch(vim.lsp, "get_client_by_id", function() return mock_client({ "en-US" }, true) end)
+
+	install_test_request_mock({ { title = "server action" } })
+	notes_lsp.setup_code_actions()
+
+	local results
+	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
+
+	assert(results[1])
+	eq(#results[1].result, 3)
+	eq(results[1].result[2].title, "Pick language")
+	eq(results[1].result[3].title, "Toggle spellcheck (current: enabled)")
+	eq(results[1].result[3].command.command, "_ltex.spellCheck")
+end
+
+T["ltex injection"]["Toggle spellcheck title reflects disabled state"] = function()
+	local notes_lsp = require("notes.lsp")
+
+	original_get_client_by_id = vim.lsp.get_client_by_id
+	patch(vim.lsp, "get_client_by_id", function() return mock_client({ "en-US" }, false) end)
+
+	install_test_request_mock({ { title = "server action" } })
+	notes_lsp.setup_code_actions()
+
+	local results
+	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
+
+	assert(results[1])
+	eq(#results[1].result, 3)
+	eq(results[1].result[3].title, "Toggle spellcheck (current: disabled)")
+end
+
+T["ltex injection"]["does not double-inject spellcheck"] = function()
+	local notes_lsp = require("notes.lsp")
+
+	original_get_client_by_id = vim.lsp.get_client_by_id
+	patch(vim.lsp, "get_client_by_id", function() return mock_client({ "en-US" }, true) end)
+
+	install_test_request_mock({
+		{ title = "existing", command = { command = "_ltex.spellCheck" } },
+	})
+	notes_lsp.setup_code_actions()
+
+	local results
+	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
+
+	assert(results[1])
+	eq(#results[1].result, 2)
 end
 
 return T

@@ -35,9 +35,7 @@ Disable individually with `lsp = { marksman = false, ltex_plus = false }`.
 
 ### marksman
 
-Markdown LSP — completion, hover, cross-file references, rename, and workspace
-symbol search (tags, headings). All standard LSP features — no plugin wrappers
-needed. Bind `vim.lsp.buf.*` yourself:
+Markdown LSP — completion, hover, cross-file references, rename, and workspace symbol search (tags, headings). All standard LSP features — no plugin wrappers needed. Bind `vim.lsp.buf.*` yourself:
 
 ```lua
 vim.keymap.set("n", "<leader>nR", vim.lsp.buf.rename, { desc = "Notes: rename (marksman)" })
@@ -47,11 +45,7 @@ vim.keymap.set("n", "<leader>nS", vim.lsp.buf.workspace_symbol, { desc = "Notes:
 
 ### ltex-ls-plus
 
-Grammar and spelling checker for `.md`, `.tex`, and `.typst`. Available as
-[code actions](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_codeAction)
-(accept suggestion, add to dictionary, disable rule, hide false positive) and
-`_ltex.*` [LSP commands](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_executeCommand).
-See `:help notes.nvim` for the full reference.
+Grammar and spelling checker for `.md`, `.tex`, and `.typst`. Available as [code actions](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_codeAction) (accept suggestion, add to dictionary, disable rule, hide false positive) and `_ltex.*` [LSP commands](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_executeCommand). See `:help notes.nvim` for the full reference.
 
 ## Usage
 
