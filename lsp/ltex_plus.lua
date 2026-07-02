@@ -16,6 +16,7 @@
 ---@class LtexCheckDocumentParams
 ---@field uri? string
 
+local ltex_data = require("notes.ltex_data")
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
 local mark = " [*]"
 
@@ -31,22 +32,6 @@ local specs = {
 ---@param lang string
 ---@param items string[]
 local function notify(msg, lang, items) vim.notify(string.format(msg, lang, table.concat(items, ", ")), vim.log.levels.INFO) end
-
---- Read a category's persisted data from a JSON file.
----@param name string Category name (e.g. "dictionary")
----@return table<string, string[]> Map of language to items
-local function read(name)
-	local path = vim.fs.joinpath(ltex_path, name .. ".json")
-	if not vim.uv.fs_stat(path) then return {} end
-
-	local content = vim.fn.readfile(path)
-	if not content[1] then return {} end
-
-	local ok, data = pcall(vim.json.decode, content[1])
-	if not ok or type(data) ~= "table" then return {} end
-
-	return data
-end
 
 --- Write a category's full data to a JSON file.
 ---@param name string Category name
@@ -75,14 +60,6 @@ end
 ---@return LtexSettings
 local function get_settings(client)
 	return client.config.settings.ltex --[[@as LtexSettings]]
-end
-
---- Read persisted dictionary/rules/false-positives from disk.
----@return table<string, table<string, string[]>> Map of setting → lang → words
-local function read_persisted_data()
-	local result = {}
-	vim.iter(specs):each(function(_, spec) result[spec.setting] = read(spec.setting) end)
-	return result
 end
 
 --- Set the current language and notify + reload.
@@ -154,7 +131,7 @@ end
 local function make_commands(client, bufnr)
 	local settings = get_settings(client)
 
-	vim.iter(read_persisted_data()):each(function(setting, langs)
+	vim.iter(ltex_data.read_all()):each(function(setting, langs)
 		local lang_list = settings.notes_languages or settings.languages or {}
 		vim.iter(lang_list):each(function(lang) settings[setting][lang] = langs[lang] or {} end)
 	end)

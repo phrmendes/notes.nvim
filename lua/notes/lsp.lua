@@ -5,29 +5,10 @@
 --- language" for ltex-ls-plus — we wrap `vim.lsp.buf_request_all` and inject the action into
 --- the results before the menu is built.
 local notes = {}
+local ltex_data = require("notes.ltex_data")
 
 local original_buf_request_all
 local installed = false
-
-local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
-
-local persist_categories = { "dictionary", "disabledRules", "hiddenFalsePositives" }
-
---- Read a category's persisted data from its JSON file.
----@param name string Category name (e.g. "dictionary")
----@return table<string, string[]> Map of language to items
-local function read_category(name)
-	local path = vim.fs.joinpath(ltex_path, name .. ".json")
-	if not vim.uv.fs_stat(path) then return {} end
-
-	local content = vim.fn.readfile(path)
-	if not content[1] then return {} end
-
-	local ok, data = pcall(vim.json.decode, content[1])
-	if not ok or type(data) ~= "table" then return {} end
-
-	return data
-end
 
 --- Read persisted dictionary, disabled rules, and hidden false positives from disk.
 ---
@@ -39,13 +20,7 @@ end
 --- follow-up check never produces diagnostics before shutdown in short-lived
 --- Neovim sessions).
 ---@return table<string, table<string, string[]>>
-function notes.read_persisted_data()
-	local result = {}
-	for _, name in ipairs(persist_categories) do
-		result[name] = read_category(name)
-	end
-	return result
-end
+function notes.read_persisted_data() return ltex_data.read_all() end
 
 ---@param action lsp.CodeAction | lsp.Command
 ---@return boolean
