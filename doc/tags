@@ -1,5 +1,6 @@
 notes.grep()	notes.txt	/*notes.grep()*
 notes.journal()	notes.txt	/*notes.journal()*
+notes.ltex_pick_language()	notes.txt	/*notes.ltex_pick_language()*
 notes.new()	notes.txt	/*notes.new()*
 notes.nvim	notes.txt	/*notes.nvim*
 notes.search()	notes.txt	/*notes.search()*

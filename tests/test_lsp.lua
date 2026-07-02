@@ -223,6 +223,11 @@ T["lsp config"]["ltex_plus uses single_file_support"] = function()
 	eq(config.root_markers, nil)
 end
 
+T["lsp config"]["health check runs without error"] = function()
+	local ok = child.lua_get([[pcall(function() require("notes.health").check() end)]])
+	eq(ok, true)
+end
+
 T["ltex commands"] = new_set({
 	hooks = {
 		pre_case = function()

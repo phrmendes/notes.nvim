@@ -191,7 +191,7 @@ available everywhere.
   └── ltex_plus.lua
 
   scripts/init.lua       -- bootstrap for tests
-  tests/                 -- mini.test suite (61 cases)
+  tests/                 -- mini.test suite (94 cases)
 <
 
 # Why no user commands ~
@@ -303,6 +303,19 @@ Parameters ~
 Usage ~
 >lua
   require('notes').grep()
+<
+------------------------------------------------------------------------------
+                                                    *notes.ltex_pick_language()*
+                          `notes.ltex_pick_language`()
+Trigger the ltex-ls-plus language picker
+
+Calls `_ltex.pickLanguage` if ltex-ls-plus is attached to the current
+buffer. Shows a `vim.ui.select` list of the configured languages (with the
+active language marked). Warns if no languages are configured in setup.
+
+Usage ~
+>lua
+  require('notes').ltex_pick_language()
 <
 ------------------------------------------------------------------------------
                                                             *notes.set_picker()*
