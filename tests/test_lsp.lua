@@ -255,6 +255,25 @@ T["ltex commands"]["addToDictionary sends didChangeConfiguration"] = function()
 	eq(#after_calls > before, true)
 end
 
+T["ltex commands"]["toggle_spellcheck invokes server command and flips local state"] = function()
+	local lsp_config = load_ltex()
+	local client = attach(lsp_config)
+
+	local sent = {}
+	local orig_request = client.request
+	client.request = function(_, method, params, _, _) table.insert(sent, { method = method, params = params }) end
+
+	eq(lsp_config.settings.ltex.spellCheck, true)
+	run_ltex("_ltex.spellCheck")
+	client.request = orig_request
+
+	eq(lsp_config.settings.ltex.spellCheck, false)
+	eq(#sent, 1)
+	eq(sent[1].method, "workspace/executeCommand")
+	eq(sent[1].params.command, "_ltex.spellCheck")
+	eq(sent[1].params.arguments, {})
+end
+
 T["ltex commands"]["reload_settings does not send languages to ltex"] = function()
 	local lsp_config = load_ltex()
 	lsp_config.settings.ltex.languages = { "en-US", "pt-BR" }
