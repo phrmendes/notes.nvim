@@ -6,10 +6,10 @@
 
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
 
-local ltex_data = {}
+local ltex = {}
 
 --- Category names for persisted ltex data.
-ltex_data.categories = { "dictionary", "disabledRules", "hiddenFalsePositives" }
+ltex.categories = { "dictionary", "disabledRules", "hiddenFalsePositives" }
 
 --- Read a category's persisted data from its JSON file.
 ---@param name string Category name (e.g. "dictionary")
@@ -29,12 +29,12 @@ end
 
 --- Read all three persisted categories from disk.
 ---@return table<string, table<string, string[]>> Map of category → language → items
-function ltex_data.read_all()
+function ltex.read_all()
 	local result = {}
-	for _, name in ipairs(ltex_data.categories) do
+	for _, name in ipairs(ltex.categories) do
 		result[name] = read_category(name)
 	end
 	return result
 end
 
-return ltex_data
+return ltex

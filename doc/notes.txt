@@ -131,7 +131,7 @@ project root. Neovim 0.11+ auto-discovers them when you call
 `vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`. The
 plugin's `setup()` triggers these enables automatically.
 
-`lsp/ltex_plus.lua` depends on `lua/notes/ltex_data.lua`, which ships
+`lsp/ltex_plus.lua` depends on `lua/notes/ltex.lua`, which ships
 with the plugin — using the lsp file standalone requires the plugin's
 full `lua/` tree on `runtimepath`.
 

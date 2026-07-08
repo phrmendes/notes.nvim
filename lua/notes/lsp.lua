@@ -5,7 +5,7 @@
 --- and "Toggle spellcheck" — we wrap `vim.lsp.buf_request_all` and inject them into the
 --- results before the menu is built.
 local notes = {}
-local ltex_data = require("notes.ltex_data")
+local ltex_data = require("notes.ltex")
 
 local original_buf_request_all
 local installed = false

@@ -16,7 +16,7 @@
 ---@class LtexCheckDocumentParams
 ---@field uri? string
 
-local ltex_data = require("notes.ltex_data")
+local ltex_data = require("notes.ltex")
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
 local mark = " [*]"
 local pending_recheck_bufnr = nil
