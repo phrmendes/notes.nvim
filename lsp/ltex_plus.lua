@@ -18,7 +18,7 @@
 
 local ltex_data = require("notes.ltex")
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
-local mark = " [*]"
+local current_lang_suffix = " [*]"
 local pending_recheck_bufnr = nil
 
 ---@type table<string, LtexPersistSpec>
@@ -86,10 +86,10 @@ local function pick_language(client, settings)
 		vim.notify("ltex: no languages configured for picker", vim.log.levels.WARN)
 		return
 	end
-	local items = vim.iter(langs):map(function(lang) return lang == settings.language and lang .. mark or lang end):totable()
+	local items = vim.iter(langs):map(function(lang) return lang == settings.language and lang .. current_lang_suffix or lang end):totable()
 	vim.ui.select(items, { prompt = "Language" }, function(choice)
 		if not choice then return end
-		local lang = choice:gsub(vim.pesc(mark) .. "$", "")
+		local lang = choice:gsub(vim.pesc(current_lang_suffix) .. "$", "")
 		set_language(client, settings, lang)
 	end)
 end
@@ -111,10 +111,10 @@ local function toggle_ltex_attachment(bufnr)
 	if #clients > 0 then
 		pending_recheck_bufnr = nil
 		clients[1]:stop(true)
-	else
-		pending_recheck_bufnr = bufnr
-		vim.lsp.enable("ltex_plus")
+		return
 	end
+	pending_recheck_bufnr = bufnr
+	vim.lsp.enable("ltex_plus")
 end
 
 --- Request a re-check of the document from ltex.
