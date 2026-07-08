@@ -31,10 +31,14 @@ local function is_pick_language(action) return action.command and action.command
 local function is_spellcheck(action) return action.command and action.command.command == "_ltex.spellCheck" end
 
 ---@param results table<integer, { result: table[], context: { client_id: integer } }>
-local function inject_custom_actions(results)
+---@param bufnr integer Buffer the code action request is for
+local function inject_custom_actions(results, bufnr)
+	local ltex_attached = #vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr }) > 0
+	local title = ltex_attached and "Disable spellcheck (current: enabled)" or "Enable spellcheck (current: disabled)"
+
 	for client_id, result in pairs(results) do
 		local client = vim.lsp.get_client_by_id(client_id)
-		if client and client.name == "ltex_plus" then
+		if client and client.name == "ltex_plus" and ltex_attached then
 			result.result = result.result or {}
 
 			if not vim.iter(result.result):any(is_pick_language) then table.insert(result.result, {
@@ -44,16 +48,26 @@ local function inject_custom_actions(results)
 				command = { command = "_ltex.pickLanguage", arguments = {} },
 			}) end
 
-			if not vim.iter(result.result):any(is_spellcheck) then
-				local spell_enabled = client.config.settings.ltex.spellCheck ~= false
-				local title = spell_enabled and "Toggle spellcheck (current: enabled)" or "Toggle spellcheck (current: disabled)"
-				table.insert(result.result, {
-					title = title,
-					kind = "refactor",
-					client_id = client_id,
-					command = { command = "_ltex.spellCheck", arguments = {} },
-				})
-			end
+			if not vim.iter(result.result):any(is_spellcheck) then table.insert(result.result, {
+				title = title,
+				kind = "refactor",
+				client_id = client_id,
+				command = { command = "_ltex.spellCheck", arguments = {} },
+			}) end
+		end
+	end
+
+	-- When ltex is detached, inject the Enable action into the first result so
+	-- the user can re-enable it from the code action menu.
+	if not ltex_attached then
+		local _, first_result = next(results)
+		if first_result then
+			first_result.result = first_result.result or {}
+			if not vim.iter(first_result.result):any(is_spellcheck) then table.insert(first_result.result, {
+				title = title,
+				kind = "refactor",
+				command = { command = "_ltex.spellCheck", arguments = {} },
+			}) end
 		end
 	end
 end
@@ -68,7 +82,7 @@ function notes.setup_code_actions()
 	vim.lsp.buf_request_all = function(bufnr, method, params_fn, callback)
 		if method ~= "textDocument/codeAction" or type(callback) ~= "function" then return original_buf_request_all(bufnr, method, params_fn, callback) end
 		return original_buf_request_all(bufnr, method, params_fn, function(results)
-			inject_custom_actions(results)
+			inject_custom_actions(results, bufnr)
 			callback(results)
 		end)
 	end

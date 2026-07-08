@@ -93,20 +93,24 @@ local function pick_language(client, settings)
 	end)
 end
 
---- Toggle the spell check setting.
+--- Detach the ltex client for the current buffer, or re-enable it if detached.
 ---
---- Flips the local `spellCheck` flag (so the injected code action title stays
---- correct), invokes the ltex server's `_ltex.spellCheck` command via
---- `workspace/executeCommand`, and then forces a re-check of the current
---- buffer with `_ltex.checkDocument`. The server toggles its flag on the
---- command but does not re-evaluate existing diagnostics — the re-check is
---- what actually clears (or republishes) them with the new setting.
----@param client vim.lsp.Client
----@param settings LtexSettings
-local function toggle_spellcheck(client, settings)
-	settings.spellCheck = not settings.spellCheck
-	client:request("workspace/executeCommand", { command = "_ltex.spellCheck", arguments = {} })
-	client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { { uri = vim.uri_from_bufnr(0) } } })
+--- The ltex server's `_ltex.spellCheck` command (toggled via
+--- `workspace/executeCommand` or `didChangeConfiguration`) updates the
+--- server's internal flag but does not always republish diagnostics
+--- mid-session, so existing squiggles persist. The reliable way to mute ltex
+--- is to stop the client: diagnostics vanish immediately because the client
+--- no longer exists. Re-enabling via `vim.lsp.enable("ltex_plus")` causes
+--- Neovim to re-attach on the markdown/tex/typst buffer, restoring
+--- diagnostics on the next document check.
+---@param bufnr integer Buffer the LSP attached to
+local function toggle_ltex_attachment(bufnr)
+	local clients = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })
+	if #clients > 0 then
+		vim.lsp.stop_client(clients[1].id, true)
+	else
+		vim.lsp.enable("ltex_plus")
+	end
 end
 
 --- Request a re-check of the document from ltex.
@@ -158,7 +162,7 @@ local function make_commands(client, bufnr)
 		end
 	end)
 
-	commands["_ltex.spellCheck"] = function() toggle_spellcheck(client, settings) end
+	commands["_ltex.spellCheck"] = function() toggle_ltex_attachment(bufnr) end
 	commands["_ltex.pickLanguage"] = function() pick_language(client, settings) end
 	commands["_ltex.checkDocument"] = function(command) check_document(client, bufnr, command) end
 
