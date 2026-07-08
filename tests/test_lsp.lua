@@ -261,15 +261,13 @@ T["ltex commands"]["toggle_spellcheck detaches ltex when attached"] = function()
 
 	local stopped_id
 	local orig_get_clients = vim.lsp.get_clients
-	local orig_stop = vim.lsp.stop_client
 	patch(vim.lsp, "get_clients", function() return { client } end)
-	patch(vim.lsp, "stop_client", function(id, _) stopped_id = id end)
+	client.stop = function(_, force) stopped_id = force end
 
 	run_ltex("_ltex.spellCheck")
 
 	patch(vim.lsp, "get_clients", orig_get_clients)
-	patch(vim.lsp, "stop_client", orig_stop)
-	eq(stopped_id, client.id)
+	eq(stopped_id, true)
 end
 
 T["ltex commands"]["toggle_spellcheck re-enables ltex when detached"] = function()
@@ -313,17 +311,15 @@ T["ltex commands"]["toggle_spellcheck clears pending recheck flag on detach"] = 
 	local lsp_config = load_ltex()
 	local client = attach(lsp_config)
 
-	local stopped_id
+	local stopped_force
 	local orig_get_clients = vim.lsp.get_clients
-	local orig_stop = vim.lsp.stop_client
 	patch(vim.lsp, "get_clients", function() return { client } end)
-	patch(vim.lsp, "stop_client", function(id, _) stopped_id = id end)
+	client.stop = function(_, force) stopped_force = force end
 
 	run_ltex("_ltex.spellCheck")
 
 	patch(vim.lsp, "get_clients", orig_get_clients)
-	patch(vim.lsp, "stop_client", orig_stop)
-	eq(stopped_id, client.id)
+	eq(stopped_force, true)
 
 	-- Detach should clear any pending flag; simulate a stale LspAttach.
 	local new_client = { id = 99, name = "ltex_plus", _sent = {} }

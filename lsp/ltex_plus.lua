@@ -110,7 +110,7 @@ local function toggle_ltex_attachment(bufnr)
 	local clients = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })
 	if #clients > 0 then
 		pending_recheck_bufnr = nil
-		vim.lsp.stop_client(clients[1].id, true)
+		clients[1]:stop(true)
 	else
 		pending_recheck_bufnr = bufnr
 		vim.lsp.enable("ltex_plus")
