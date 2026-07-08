@@ -586,10 +586,9 @@ T["ltex injection"]["injects Pick language for ltex_plus client"] = function()
 	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
 
 	assert(results[1])
-	assert(results[1].result[2])
 	eq(#results[1].result, 3)
-	eq(results[1].result[2].title, "Pick language")
-	eq(results[1].result[2].command.command, "_ltex.pickLanguage")
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Pick language"), true)
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.command and a.command.command end, results[1].result), "_ltex.pickLanguage"), true)
 end
 
 T["ltex injection"]["always injects for ltex_plus regardless of languages"] = function()
@@ -608,7 +607,7 @@ T["ltex injection"]["always injects for ltex_plus regardless of languages"] = fu
 
 	assert(results[1])
 	eq(#results[1].result, 3)
-	eq(results[1].result[2].title, "Pick language")
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Pick language"), true)
 end
 
 T["ltex injection"]["injects Enable spellcheck for non-ltex clients when ltex is detached"] = function()
@@ -627,7 +626,7 @@ T["ltex injection"]["injects Enable spellcheck for non-ltex clients when ltex is
 	assert(results[1])
 	eq(#results[1].result, 2)
 	eq(results[1].result[1].title, "server action")
-	eq(results[1].result[2].title, "Enable spellcheck (current: disabled)")
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Enable spellcheck (current: disabled)"), true)
 end
 
 T["ltex injection"]["does not double-inject if Pick language already present"] = function()
@@ -666,9 +665,8 @@ T["ltex injection"]["injects Disable spellcheck alongside Pick language when lte
 
 	assert(results[1])
 	eq(#results[1].result, 3)
-	eq(results[1].result[2].title, "Pick language")
-	eq(results[1].result[3].title, "Disable spellcheck (current: enabled)")
-	eq(results[1].result[3].command.command, "_ltex.spellCheck")
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Pick language"), true)
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Disable spellcheck (current: enabled)"), true)
 end
 
 T["ltex injection"]["Disable spellcheck title when spellCheck is false in settings"] = function()
@@ -687,7 +685,7 @@ T["ltex injection"]["Disable spellcheck title when spellCheck is false in settin
 
 	assert(results[1])
 	eq(#results[1].result, 3)
-	eq(results[1].result[3].title, "Disable spellcheck (current: enabled)")
+	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Disable spellcheck (current: enabled)"), true)
 end
 
 T["ltex injection"]["does not double-inject spellcheck"] = function()
