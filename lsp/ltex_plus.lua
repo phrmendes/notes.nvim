@@ -96,15 +96,17 @@ end
 --- Toggle the spell check setting.
 ---
 --- Flips the local `spellCheck` flag (so the injected code action title stays
---- correct) and invokes the ltex server's `_ltex.spellCheck` command via
---- `workspace/executeCommand`. ltex-ls-plus does not re-read `spellCheck`
---- from `workspace/didChangeConfiguration` mid-session, so the server command
---- is the only way to actually mute the diagnostics.
+--- correct), invokes the ltex server's `_ltex.spellCheck` command via
+--- `workspace/executeCommand`, and then forces a re-check of the current
+--- buffer with `_ltex.checkDocument`. The server toggles its flag on the
+--- command but does not re-evaluate existing diagnostics — the re-check is
+--- what actually clears (or republishes) them with the new setting.
 ---@param client vim.lsp.Client
 ---@param settings LtexSettings
 local function toggle_spellcheck(client, settings)
 	settings.spellCheck = not settings.spellCheck
 	client:request("workspace/executeCommand", { command = "_ltex.spellCheck", arguments = {} })
+	client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { { uri = vim.uri_from_bufnr(0) } } })
 end
 
 --- Request a re-check of the document from ltex.

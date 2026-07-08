@@ -255,7 +255,7 @@ T["ltex commands"]["addToDictionary sends didChangeConfiguration"] = function()
 	eq(#after_calls > before, true)
 end
 
-T["ltex commands"]["toggle_spellcheck invokes server command and flips local state"] = function()
+T["ltex commands"]["toggle_spellcheck invokes server commands and flips local state"] = function()
 	local lsp_config = load_ltex()
 	local client = attach(lsp_config)
 
@@ -268,10 +268,13 @@ T["ltex commands"]["toggle_spellcheck invokes server command and flips local sta
 	client.request = orig_request
 
 	eq(lsp_config.settings.ltex.spellCheck, false)
-	eq(#sent, 1)
+	eq(#sent, 2)
 	eq(sent[1].method, "workspace/executeCommand")
 	eq(sent[1].params.command, "_ltex.spellCheck")
 	eq(sent[1].params.arguments, {})
+	eq(sent[2].method, "workspace/executeCommand")
+	eq(sent[2].params.command, "_ltex.checkDocument")
+	eq(sent[2].params.arguments[1].uri, vim.uri_from_bufnr(0))
 end
 
 T["ltex commands"]["reload_settings does not send languages to ltex"] = function()
