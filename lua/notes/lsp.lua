@@ -23,11 +23,11 @@ local installed = false
 function notes.read_persisted_data() return ltex_data.read_all() end
 
 ---@param action lsp.CodeAction | lsp.Command
----@return boolean
+---@return boolean?
 local function is_pick_language(action) return action.command and action.command.command == "_ltex.pickLanguage" end
 
 ---@param action lsp.CodeAction | lsp.Command
----@return boolean
+---@return boolean?
 local function is_spellcheck(action) return action.command and action.command.command == "_ltex.spellCheck" end
 
 ---@param results table<integer, { result: table[], context: { client_id: integer } }>
@@ -79,13 +79,13 @@ function notes.setup_code_actions()
 	installed = true
 
 	original_buf_request_all = vim.lsp.buf_request_all
-	vim.lsp.buf_request_all = function(bufnr, method, params_fn, callback)
+	rawset(vim.lsp, "buf_request_all", function(bufnr, method, params_fn, callback)
 		if method ~= "textDocument/codeAction" or type(callback) ~= "function" then return original_buf_request_all(bufnr, method, params_fn, callback) end
 		return original_buf_request_all(bufnr, method, params_fn, function(results)
 			inject_custom_actions(results, bufnr)
 			callback(results)
 		end)
-	end
+	end)
 end
 
 --- Undo the patch and reset the installed flag. Intended for tests.
@@ -93,7 +93,7 @@ function notes.reset_code_actions()
 	if not installed then return end
 	installed = false
 	if original_buf_request_all then
-		vim.lsp.buf_request_all = original_buf_request_all
+		rawset(vim.lsp, "buf_request_all", original_buf_request_all)
 		original_buf_request_all = nil
 	end
 end

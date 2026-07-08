@@ -13,9 +13,9 @@ function health.check()
 	if config.path then
 		local stat = vim.uv.fs_stat(config.path)
 		if stat and stat.type == "directory" then
-			vim.health.ok("Notes directory exists: %s", config.path)
+			vim.health.ok(string.format("Notes directory exists: %s", config.path))
 		else
-			vim.health.warn("Notes directory does not exist: %s", config.path)
+			vim.health.warn(string.format("Notes directory does not exist: %s", config.path))
 		end
 	else
 		vim.health.error("Notes path not configured: run setup()")
@@ -23,9 +23,9 @@ function health.check()
 
 	for _, bin in ipairs({ "marksman", "ltex-ls-plus" }) do
 		if vim.fn.executable(bin) == 1 then
-			vim.health.ok("%s found on PATH", bin)
+			vim.health.ok(string.format("%s found on PATH", bin))
 		else
-			vim.health.warn("%s not found on PATH", bin)
+			vim.health.warn(string.format("%s not found on PATH", bin))
 		end
 	end
 
@@ -35,9 +35,9 @@ function health.check()
 		local stat = vim.uv.fs_stat(path)
 		if stat then
 			local size = stat.size or 0
-			vim.health.ok("%s: %d bytes", cat, size)
+			vim.health.ok(string.format("%s: %d bytes", cat, size))
 		else
-			vim.health.info("No %s file yet (first use)", cat)
+			vim.health.info(string.format("No %s file yet (first use)", cat))
 		end
 	end
 
