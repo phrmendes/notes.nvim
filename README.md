@@ -74,6 +74,7 @@ require("notes").journal()           -- open today's journal entry
 require("notes").search()            -- search by filename
 require("notes").grep()              -- grep note contents
 require("notes").set_picker("mini")  -- switch picker at runtime
+require("notes").ltex_pick_language()   -- ltex language picker
 ```
 
 ## Requirements

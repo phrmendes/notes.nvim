@@ -148,7 +148,7 @@
 ---
 --- 2. **Code actions** — server provides 4 quick fixes (accept suggestion,
 ---    add to dictionary, disable rule, hide false positive). The plugin
----    adds one more: "Pick language" (opens `vim.ui.select` with
+---    adds two more: "Pick language" (opens `vim.ui.select` with
 ---    `config.ltex_languages`, current language marked `[*]`).
 ---
 --- 3. **LSP commands** — registered in `on_attach`:
@@ -184,11 +184,14 @@
 ---   ├── config.lua        -- setup() + set_picker()
 ---   ├── types.lua         -- @class definitions (UserConfig, etc.)
 ---   ├── utils.lua         -- shared utilities
+---   ├── lsp.lua           -- code action injection for ltex
+---   ├── ltex.lua          -- persisted ltex data reader
+---   ├── health.lua        -- :checkhealth notes
 ---   ├── note.lua          -- note.create()
 ---   ├── journal.lua       -- journal.open()
 ---   └── picker/           -- picker backends
 ---       ├── init.lua      -- orchestrator + get_picker()
----       ├── utils.lua     -- list_md_files, rg_search, on_choice
+---       ├── utils.lua     -- list_md_files, rg, on_choice
 ---       ├── native.lua    -- vim.ui backend
 ---       └── mini.lua      -- mini.pick backend
 ---
@@ -197,7 +200,7 @@
 ---   └── ltex_plus.lua
 ---
 ---   scripts/init.lua       -- bootstrap for tests
----   tests/                 -- mini.test suite (94 cases)
+---   tests/                 -- mini.test suite (100 cases)
 --- <
 ---
 --- # Why no user commands ~
