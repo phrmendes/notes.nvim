@@ -323,7 +323,7 @@ function notes.grep(path) picker.grep(path) end
 function notes.ltex_pick_language()
 	local cmd = vim.lsp.commands["_ltex.pickLanguage"]
 	if cmd then
-		cmd({})
+		cmd({}, {})
 	else
 		vim.notify("ltex-ls-plus not attached to this buffer", vim.log.levels.WARN)
 	end

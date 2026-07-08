@@ -167,7 +167,7 @@ utils.edit = function(path, lnum)
 	local bufnr = vim.fn.bufnr(path)
 	if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
 		vim.api.nvim_set_current_buf(bufnr)
-		pcall(vim.cmd, "checktime")
+		pcall(function() vim.cmd("checktime") end)
 		if lnum then vim.api.nvim_win_set_cursor(0, { lnum, 0 }) end
 		return
 	end
@@ -175,7 +175,7 @@ utils.edit = function(path, lnum)
 	local cmd = "silent! edit!"
 	if lnum then cmd = cmd .. " +" .. lnum end
 	cmd = cmd .. " " .. path
-	pcall(vim.cmd, cmd)
+	pcall(function() vim.cmd(cmd) end)
 end
 
 ---@param item any
