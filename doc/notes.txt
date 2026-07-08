@@ -160,7 +160,9 @@ layers of integration:
    - `_ltex.hideFalsePositives` (server) — appends, persists
    - `_ltex.spellCheck` (client) — detach/reattach ltex on the current buffer
      (mutes all ltex hints until re-enabled; exposed in the code action
-     menu as "Disable/Enable spellcheck (current: enabled/disabled)")
+     menu as "Disable/Enable spellcheck (current: enabled/disabled)").
+     Re-enabling automatically triggers a document re-check so diagnostics
+     appear without saving.
    - `_ltex.pickLanguage` (client) — `vim.ui.select` language picker
    - `_ltex.checkDocument` (client) — request re-check
 

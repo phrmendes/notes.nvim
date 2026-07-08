@@ -277,9 +277,14 @@ T["ltex commands"]["toggle_spellcheck re-enables ltex when detached"] = function
 	attach(lsp_config)
 
 	local enabled
+	local new_client = { id = 99, name = "ltex_plus", _sent = {} }
+	function new_client.request(_, method, params) table.insert(new_client._sent, { method = method, params = params }) end
+
 	local orig_get_clients = vim.lsp.get_clients
 	local orig_enable = vim.lsp.enable
+	local orig_get_client_by_id = vim.lsp.get_client_by_id
 	patch(vim.lsp, "get_clients", function() return {} end)
+	patch(vim.lsp, "get_client_by_id", function(id) return id == 99 and new_client or nil end)
 	patch(vim.lsp, "enable", function(name) enabled = name end)
 
 	run_ltex("_ltex.spellCheck")
@@ -287,6 +292,47 @@ T["ltex commands"]["toggle_spellcheck re-enables ltex when detached"] = function
 	patch(vim.lsp, "get_clients", orig_get_clients)
 	patch(vim.lsp, "enable", orig_enable)
 	eq(enabled, "ltex_plus")
+
+	-- Manually fire LspAttach for the new client; the autocmd should trigger checkDocument.
+	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
+	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
+
+	eq(#new_client._sent, 1)
+	eq(new_client._sent[1].method, "workspace/executeCommand")
+	eq(new_client._sent[1].params.command, "_ltex.checkDocument")
+
+	-- Flag should be cleared; firing again does not re-trigger.
+	new_client._sent = {}
+	patch(vim.lsp, "get_client_by_id", function(id) return id == 99 and new_client or nil end)
+	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
+	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
+	eq(#new_client._sent, 0)
+end
+
+T["ltex commands"]["toggle_spellcheck clears pending recheck flag on detach"] = function()
+	local lsp_config = load_ltex()
+	local client = attach(lsp_config)
+
+	local stopped_id
+	local orig_get_clients = vim.lsp.get_clients
+	local orig_stop = vim.lsp.stop_client
+	patch(vim.lsp, "get_clients", function() return { client } end)
+	patch(vim.lsp, "stop_client", function(id, _) stopped_id = id end)
+
+	run_ltex("_ltex.spellCheck")
+
+	patch(vim.lsp, "get_clients", orig_get_clients)
+	patch(vim.lsp, "stop_client", orig_stop)
+	eq(stopped_id, client.id)
+
+	-- Detach should clear any pending flag; simulate a stale LspAttach.
+	local new_client = { id = 99, name = "ltex_plus", _sent = {} }
+	function new_client.request(_, method, params) table.insert(new_client._sent, { method = method, params = params }) end
+	local orig_get_client_by_id = vim.lsp.get_client_by_id
+	patch(vim.lsp, "get_client_by_id", function(id) return id == 99 and new_client or nil end)
+	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
+	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
+	eq(#new_client._sent, 0)
 end
 
 T["ltex commands"]["reload_settings does not send languages to ltex"] = function()

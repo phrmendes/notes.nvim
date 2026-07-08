@@ -19,6 +19,7 @@
 local ltex_data = require("notes.ltex_data")
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
 local mark = " [*]"
+local pending_recheck_bufnr = nil
 
 ---@type table<string, LtexPersistSpec>
 local specs = {
@@ -101,14 +102,17 @@ end
 --- mid-session, so existing squiggles persist. The reliable way to mute ltex
 --- is to stop the client: diagnostics vanish immediately because the client
 --- no longer exists. Re-enabling via `vim.lsp.enable("ltex_plus")` causes
---- Neovim to re-attach on the markdown/tex/typst buffer, restoring
---- diagnostics on the next document check.
+--- Neovim to re-attach on the markdown/tex/typst buffer. When re-enabling,
+--- sets a flag so the `LspAttach` autocmd below automatically triggers
+--- `_ltex.checkDocument` on the new client — no manual save required.
 ---@param bufnr integer Buffer the LSP attached to
 local function toggle_ltex_attachment(bufnr)
 	local clients = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })
 	if #clients > 0 then
+		pending_recheck_bufnr = nil
 		vim.lsp.stop_client(clients[1].id, true)
 	else
+		pending_recheck_bufnr = bufnr
 		vim.lsp.enable("ltex_plus")
 	end
 end
@@ -123,6 +127,21 @@ local function check_document(client, bufnr, command)
 	params.uri = params.uri or vim.uri_from_bufnr(bufnr)
 	client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
 end
+
+-- When the user re-enables ltex via the Toggle spellcheck code action,
+-- ltex-ls-plus does not publish diagnostics until the buffer is saved.
+-- Listen for the LspAttach that follows `vim.lsp.enable` and trigger a
+-- re-check on the new client so diagnostics appear immediately.
+vim.api.nvim_create_autocmd("LspAttach", {
+	callback = function(args)
+		if not pending_recheck_bufnr or args.buf ~= pending_recheck_bufnr then return end
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		if not client or client.name ~= "ltex_plus" then return end
+		local target = pending_recheck_bufnr
+		pending_recheck_bufnr = nil
+		check_document(client, target, { arguments = { {} } })
+	end,
+})
 
 --- Append items to a persisted category and update the in-memory settings.
 ---@param category string Settings key (e.g. "dictionary")
