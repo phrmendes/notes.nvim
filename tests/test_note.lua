@@ -7,16 +7,9 @@ local child, T = utils.new_child_set()
 
 T["create"] = new_set()
 
-local make_temp_dir = function()
-	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
-	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
-	vim.fn.mkdir(temp_dir, "p")
-	return temp_dir
-end
-
 local create_note = function(title, tags, path) child.lua(string.format([[require("notes.note").create(%q, %s, %q)]], title, tags and string.format("%q", tags) or "nil", path)) end
 
-local get_files = function(dir) return child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", dir)) end
+local get_files = function(dir) return utils.glob_md(child, dir) end
 
 vim
 	.iter({
@@ -69,7 +62,7 @@ vim
 	})
 	:each(function(case)
 		T["create"][case.name] = function()
-			local temp_dir = make_temp_dir()
+			local temp_dir = utils.temp_dir()
 			utils.setup(child, temp_dir)
 			create_note(case.title, case.tags, temp_dir)
 
@@ -83,7 +76,7 @@ vim
 	end)
 
 T["create"]["creates parent directories for custom path"] = function()
-	local temp_dir = make_temp_dir()
+	local temp_dir = utils.temp_dir()
 	local sub_dir = vim.fs.joinpath(temp_dir, "sub", "deep")
 
 	utils.setup(child, temp_dir)

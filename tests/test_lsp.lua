@@ -4,7 +4,7 @@ local new_set, eq = test.new_set, test.expect.equality
 
 local child, T = utils.new_child_set()
 
-local function patch(t, k, v) rawset(t, k, v) end
+local patch = utils.patch
 local function load_ltex() return loadfile(vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua"))() end
 
 local function make_client(lsp_config)
@@ -342,35 +342,28 @@ T["ltex commands"]["reload_settings does not send languages to ltex"] = function
 	eq(notif[1].params.settings.languages, nil)
 end
 
-T["ltex commands"]["disableRules notifies rule disabled"] = function()
-	local lsp_config = load_ltex()
-	attach(lsp_config)
+vim
+	.iter({
+		{ cmd = "_ltex.disableRules", arg = "ruleIds", val = "RULE_X", msg = "RULE_X" },
+		{ cmd = "_ltex.hideFalsePositives", arg = "falsePositives", val = "fp-string", msg = "en%-US" },
+		{ cmd = "_ltex.addToDictionary", arg = "words", val = "testword", msg = "testword" },
+	})
+	:each(function(c)
+		T["ltex commands"][string.format("notifies on %s", c.cmd)] = function()
+			local lsp_config = load_ltex()
+			attach(lsp_config)
 
-	local notified = {}
-	local orig = vim.notify
-	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
+			local notified = {}
+			local orig = vim.notify
+			patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
 
-	run_ltex("_ltex.disableRules", { ruleIds = { ["en-US"] = { "RULE_X" } } })
+			run_ltex(c.cmd, { [c.arg] = { ["en-US"] = { c.val } } })
 
-	patch(vim, "notify", orig)
-	eq(#notified, 1)
-	eq(notified[1]:find("RULE_X") ~= nil, true)
-end
-
-T["ltex commands"]["hideFalsePositives notifies false positive hidden"] = function()
-	local lsp_config = load_ltex()
-	attach(lsp_config)
-
-	local notified = {}
-	local orig = vim.notify
-	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
-
-	run_ltex("_ltex.hideFalsePositives", { falsePositives = { ["en-US"] = { "fp-string" } } })
-
-	patch(vim, "notify", orig)
-	eq(#notified, 1)
-	eq(notified[1]:find("en%-US") ~= nil, true)
-end
+			patch(vim, "notify", orig)
+			eq(#notified, 1)
+			eq(notified[1]:find(c.msg) ~= nil, true)
+		end
+	end)
 
 T["ltex commands"]["disableRules sends didChangeConfiguration"] = function()
 	local lsp_config = load_ltex()
@@ -381,21 +374,6 @@ T["ltex commands"]["disableRules sends didChangeConfiguration"] = function()
 
 	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client.notified)
 	eq(#after_calls > before, true)
-end
-
-T["ltex commands"]["addToDictionary notifies words added"] = function()
-	local lsp_config = load_ltex()
-	attach(lsp_config)
-
-	local notified = {}
-	local orig = vim.notify
-	patch(vim, "notify", function(msg, _, _) table.insert(notified, msg) end)
-
-	run_ltex("_ltex.addToDictionary", { words = { ["en-US"] = { "testword" } } })
-
-	patch(vim, "notify", orig)
-	eq(#notified, 1)
-	eq(notified[1]:find("testword") ~= nil, true)
 end
 
 T["ltex commands"]["no textDocument/codeAction handler override after on_attach"] = function()

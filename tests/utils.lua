@@ -3,6 +3,15 @@ local eq = test.expect.equality
 
 local utils = {}
 
+utils.patch = function(t, k, v) rawset(t, k, v) end
+
+utils.temp_dir = function()
+	local id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. id)
+	vim.fn.mkdir(dir, "p")
+	return dir
+end
+
 ---@type { date_prefix: string, id_suffix: string, md_end: string }
 utils.patterns = {
 	date_prefix = "^%d%d%d%d%d%d%d%d",
@@ -188,5 +197,7 @@ utils.journal_glob = function(child, temp_dir)
 	local pattern = vim.fs.joinpath(temp_dir, "journal")
 	return child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", pattern))
 end
+
+utils.glob_md = function(child, dir) return child.lua_get(string.format("vim.fn.glob(%q, 0, 1)", vim.fs.joinpath(dir, "*.md"))) end
 
 return utils
