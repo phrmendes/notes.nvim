@@ -18,8 +18,8 @@
 
 local ltex_data = require("notes.ltex")
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
-local current_lang_suffix = " [*]"
-local pending_recheck_bufnr = nil
+local marker = " [*]"
+local pending = nil
 
 ---@type table<string, LtexPersistSpec>
 local specs = {
@@ -82,14 +82,17 @@ end
 local function pick_language(client, settings)
 	local cfg = package.loaded["notes.config"]
 	local langs = (cfg and #cfg.ltex_languages > 0) and cfg.ltex_languages or settings.notes_languages or settings.languages or {}
+
 	if #langs == 0 then
 		vim.notify("ltex: no languages configured for picker", vim.log.levels.WARN)
 		return
 	end
-	local items = vim.iter(langs):map(function(lang) return lang == settings.language and lang .. current_lang_suffix or lang end):totable()
+
+	local items = vim.iter(langs):map(function(lang) return lang == settings.language and lang .. marker or lang end):totable()
+
 	vim.ui.select(items, { prompt = "Language" }, function(choice)
 		if not choice then return end
-		local lang = choice:gsub(vim.pesc(current_lang_suffix) .. "$", "")
+		local lang = choice:gsub(vim.pesc(marker) .. "$", "")
 		set_language(client, settings, lang)
 	end)
 end
@@ -108,12 +111,14 @@ end
 ---@param bufnr integer Buffer the LSP attached to
 local function toggle_ltex_attachment(bufnr)
 	local clients = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })
+
 	if #clients > 0 then
-		pending_recheck_bufnr = nil
+		pending = nil
 		clients[1]:stop(true)
 		return
 	end
-	pending_recheck_bufnr = bufnr
+
+	pending = bufnr
 	vim.lsp.enable("ltex_plus")
 end
 
@@ -136,12 +141,13 @@ end
 -- way to nudge a re-evaluation without writing to disk.
 vim.api.nvim_create_autocmd("LspAttach", {
 	callback = function(args)
-		if not pending_recheck_bufnr or args.buf ~= pending_recheck_bufnr then return end
+		if not pending or args.buf ~= pending then return end
 		local client = vim.lsp.get_client_by_id(args.data.client_id)
 		if not client or client.name ~= "ltex_plus" then return end
-		pending_recheck_bufnr = nil
+		pending = nil
 		local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, false)
 		local text = table.concat(lines, "\n")
+
 		client:notify("textDocument/didChange", {
 			textDocument = {
 				uri = vim.uri_from_bufnr(args.buf),
