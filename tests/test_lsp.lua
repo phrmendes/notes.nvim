@@ -276,7 +276,7 @@ T["ltex commands"]["toggle_spellcheck re-enables ltex when detached"] = function
 
 	local enabled
 	local new_client = { id = 99, name = "ltex_plus", _sent = {} }
-	function new_client.request(_, method, params) table.insert(new_client._sent, { method = method, params = params }) end
+	function new_client.notify(_, method, params) table.insert(new_client._sent, { method = method, params = params }) end
 
 	local orig_get_clients = vim.lsp.get_clients
 	local orig_enable = vim.lsp.enable
@@ -291,13 +291,13 @@ T["ltex commands"]["toggle_spellcheck re-enables ltex when detached"] = function
 	patch(vim.lsp, "enable", orig_enable)
 	eq(enabled, "ltex_plus")
 
-	-- Manually fire LspAttach for the new client; the autocmd should trigger checkDocument.
+	-- Manually fire LspAttach for the new client; the autocmd should trigger didChange.
 	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
 	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
 
 	eq(#new_client._sent, 1)
-	eq(new_client._sent[1].method, "workspace/executeCommand")
-	eq(new_client._sent[1].params.command, "_ltex.checkDocument")
+	eq(new_client._sent[1].method, "textDocument/didChange")
+	eq(new_client._sent[1].params.contentChanges[1].text ~= nil, true)
 
 	-- Flag should be cleared; firing again does not re-trigger.
 	new_client._sent = {}

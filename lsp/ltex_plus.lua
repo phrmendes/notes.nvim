@@ -130,16 +130,25 @@ end
 
 -- When the user re-enables ltex via the Toggle spellcheck code action,
 -- ltex-ls-plus does not publish diagnostics until the buffer is saved.
--- Listen for the LspAttach that follows `vim.lsp.enable` and trigger a
--- re-check on the new client so diagnostics appear immediately.
+-- `_ltex.checkDocument` during attach conflicts with ltex's initial check
+-- (same class of issue documented in notes.lsp). Instead, send a no-op
+-- `textDocument/didChange` with the full buffer content — the standard LSP
+-- way to nudge a re-evaluation without writing to disk.
 vim.api.nvim_create_autocmd("LspAttach", {
 	callback = function(args)
 		if not pending_recheck_bufnr or args.buf ~= pending_recheck_bufnr then return end
 		local client = vim.lsp.get_client_by_id(args.data.client_id)
 		if not client or client.name ~= "ltex_plus" then return end
-		local target = pending_recheck_bufnr
 		pending_recheck_bufnr = nil
-		check_document(client, target, { arguments = { {} } })
+		local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, false)
+		local text = table.concat(lines, "\n")
+		client:notify("textDocument/didChange", {
+			textDocument = {
+				uri = vim.uri_from_bufnr(args.buf),
+				version = vim.api.nvim_buf_get_changedtick(args.buf),
+			},
+			contentChanges = { { text = text } },
+		})
 	end,
 })
 
