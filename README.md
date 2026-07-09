@@ -40,7 +40,8 @@ vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { d
 
 The plugin ships `lsp/marksman.lua` and `lsp/ltex_plus.lua` at the project root.
 Neovim 0.11+ auto-discovers them; `setup()` enables both automatically.
-Disable individually with `lsp = { marksman = false, ltex_plus = false }`.
+Disable individually with `lsp = { marksman = { enabled = false }, ltex_plus = { enabled = false } }`
+(or `lsp = false` to disable all).
 
 ### marksman
 
@@ -80,10 +81,10 @@ require("notes").set_picker("mini")  -- switch picker at runtime
 
 - Neovim 0.11+ (for `lsp/<server>.lua` runtime discovery)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) (for grep)
-- [fd](https://github.com/sharkdp/fd) (for the `mini` picker backend)
 
 ### Optional
 
+- [fd](https://github.com/sharkdp/fd) (for the `mini` picker backend)
 - [mini.pick](https://github.com/echasnovski/mini.nvim) — for the `mini` picker backend
 - [marksman](https://github.com/artempyanykh/marksman) — for markdown LSP features
 - [ltex-ls-plus](https://github.com/ltex-plus/ltex-ls-plus) — for grammar/spelling checks

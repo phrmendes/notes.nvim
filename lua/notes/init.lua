@@ -92,8 +92,8 @@
 ---
 --- - `path` — `~/Documents/notes`
 --- - `picker` — `"native"` (or `"mini"` if `mini.pick` is available)
---- - `lsp.marksman` — `true` (auto-enable marksman)
---- - `lsp.ltex_plus` — `true` (auto-enable ltex-ls-plus)
+--- - `lsp.marksman` — `{ enabled = true }` (auto-enable marksman)
+--- - `lsp.ltex_plus` — `{ enabled = true }` (auto-enable ltex-ls-plus)
 --- - `journal.title_format` — `"%Y-%m-%d"`
 ---
 ---@usage >lua
@@ -101,8 +101,11 @@
 ---     path = vim.fs.joinpath(vim.env.HOME, 'Documents', 'notes'),
 ---     picker = 'mini',
 ---     lsp = {
----       marksman = true,    -- disable with `false`
----       ltex_plus = false,  -- only enable what you have installed
+---       marksman = { enabled = true },           -- disable with `{ enabled = false }`
+---       ltex_plus = {
+---         enabled = true,
+---         languages = { default = "en-US", additionals = { "pt-BR" } },
+---       },
 ---     },
 ---     journal = { title_format = '%d/%m/%Y' },
 ---   })
@@ -128,10 +131,12 @@
 --- project root. Neovim 0.11+ auto-discovers them when you call
 --- `vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`. The
 --- plugin's `setup()` triggers these enables automatically.
+--- Disable with `lsp = { marksman = { enabled = false } }` or
+--- `lsp = false` to skip both.
 ---
---- `lsp/ltex_plus.lua` depends on `lua/notes/ltex.lua`, which ships
---- with the plugin — using the lsp file standalone requires the plugin's
---- full `lua/` tree on `runtimepath`.
+--- `lua/notes/lsp.lua` injects custom code actions into ltex-ls-plus results;
+--- `lua/notes/ltex.lua` reads persisted dictionary/rule data. Both ship
+--- with the plugin.
 ---
 --- ## marksman ~
 ---
