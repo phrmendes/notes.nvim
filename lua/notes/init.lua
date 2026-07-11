@@ -140,7 +140,7 @@
 --- ## marksman ~
 ---
 --- Markdown LSP — completion, hover, cross-file references, symbols.
---- Config lives in `lsp/marksman.lua` (8 lines, no client-side handlers).
+--- Config lives in `lsp/marksman.lua` (no client-side handlers).
 --- Use `vim.lsp.buf.format()` to format a buffer manually.
 ---
 --- ## ltex-ls-plus ~
@@ -188,8 +188,9 @@
 ---   ├── config.lua        -- setup() + set_picker()
 ---   ├── types.lua         -- @class definitions (UserConfig, etc.)
 ---   ├── utils.lua         -- shared utilities
----   ├── lsp.lua           -- code action injection for ltex
----   ├── ltex.lua          -- persisted ltex data reader
+---   ├── lsp/               -- in-process LSP server for ltex
+---   │   ├── init.lua       -- server setup + code actions
+---   │   └── utils.lua      -- dispatch + persisted data reader
 ---   ├── health.lua        -- :checkhealth notes
 ---   ├── note.lua          -- note.create()
 ---   ├── journal.lua       -- journal.open()
@@ -204,7 +205,7 @@
 ---   └── ltex_plus.lua
 ---
 ---   scripts/init.lua       -- bootstrap for tests
----   tests/                 -- mini.test suite (100 cases)
+---   tests/                 -- mini.test suite
 --- <
 ---
 --- # Why no user commands ~
