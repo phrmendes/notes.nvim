@@ -16,7 +16,11 @@ function picker.files(dir)
 	dir = dir or config.path
 
 	local items = list_md_files(dir)
-	get_picker().files(items, dir, on_choice)
+
+	get_picker().files(items, dir, function(choice)
+		if choice then choice = vim.fs.joinpath(dir, choice) end
+		on_choice(choice)
+	end)
 end
 
 --- Grep in notes

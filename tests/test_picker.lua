@@ -146,7 +146,7 @@ T["mini backend"]["files calls mini_pick.start with items"] = function()
 
 	eq(child.lua_get("_G.captured_start_name"), "Notes")
 	eq(type(child.lua_get("_G.captured_start_items")), "table")
-	eq(child.lua_get("_G.captured_start_items")[1], vim.fs.joinpath(temp_dir, "a.md"))
+	eq(child.lua_get("_G.captured_start_items")[1], "a.md")
 end
 
 T["mini backend"]["grep calls mini_pick.builtin.grep_live"] = function()

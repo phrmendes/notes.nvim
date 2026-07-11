@@ -10,10 +10,9 @@ local utils = {}
 ---@param dir string
 ---@return string[] Sorted absolute paths
 utils.list_md_files = function(dir)
-	local items = vim.iter(vim.fs.dir(dir, { depth = nil })):filter(function(name) return vim.endswith(name, ".md") end):map(function(name) return vim.fs.joinpath(dir, name) end):totable()
-
+	local files = vim.fs.dir(dir, { depth = nil })
+	local items = vim.iter(files):filter(function(file) return vim.endswith(file, ".md") end):map(function(file, _) return file end):totable()
 	table.sort(items)
-
 	return items
 end
 
