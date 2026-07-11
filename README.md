@@ -19,6 +19,7 @@ vim.pack.add({ "https://github.com/phrmendes/notes.nvim" })
 require("notes").setup({
   path = vim.fs.joinpath(vim.env.HOME, "Documents", "notes"),
   picker = "mini", -- or "native" (default)
+  journal = { title_format = "%Y-%m-%d" },
   lsp = {
     marksman = { enabled = true },
     ltex_plus = {
@@ -26,7 +27,6 @@ require("notes").setup({
       languages = { default = "en-US", additionals = { "pt-BR" } },
     },
   },
-  journal = { title_format = "%Y-%m-%d" },
 })
 
 -- Suggested keybindings

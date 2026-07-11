@@ -9,7 +9,7 @@ local default_picker = pcall(require, "mini.pick") and "mini" or "native"
 local defaults = {
 	path = vim.env.HOME .. "/Documents/notes",
 	picker = default_picker,
-	lsp = { marksman = { enabled = true }, ltex_plus = { enabled = true } },
+	lsp = { marksman = { enabled = true }, ltex_plus = { enabled = true, language = "en-US", languages = {} } },
 	journal = { title_format = "%Y-%m-%d" },
 }
 
@@ -34,33 +34,35 @@ local servers = {
 	ltex_plus = function(opts)
 		if not opts or (opts ~= true and opts.enabled == false) then return end
 		local lsp = require("notes.lsp")
-		lsp.setup_code_actions()
+		local read_ltex_data = require("notes.lsp.utils").read_ltex_data
+
+		vim.api.nvim_create_autocmd("FileType", {
+			pattern = { "markdown", "tex" },
+			callback = function(args) lsp.start(args.buf) end,
+		})
 
 		if type(opts) ~= "table" then
-			vim.lsp.enable("ltex_plus")
+			vim.lsp.config("ltex_plus", {})
 			return
 		end
 
 		local settings = vim.tbl_extend("force", {}, opts)
 		settings.enabled = nil
 
-		local lang = type(settings.languages) == "table" and settings.languages or {}
-		local default_lang = lang.default or "en-US"
-		local additionals = type(lang.additionals) == "table" and lang.additionals or {}
-		settings.language = default_lang
-		local picker_list = vim.list_extend({ default_lang }, vim.tbl_filter(function(l) return l ~= default_lang end, additionals))
+		settings.language = settings.languages.default or settings.language
+		local additionals = settings.languages.additionals or {}
+		local picker_list = vim.list_extend({ settings.language }, vim.tbl_filter(function(l) return l ~= settings.language end, additionals))
 
 		config.ltex_languages = picker_list
 		settings.languages = nil
 		settings.notes_languages = picker_list
 
-		local persisted = lsp.read_persisted_data()
+		local persisted = read_ltex_data()
 		settings.dictionary = persisted.dictionary
 		settings.disabledRules = persisted.disabledRules
 		settings.hiddenFalsePositives = persisted.hiddenFalsePositives
 
 		vim.lsp.config("ltex_plus", { settings = { ltex = settings } })
-		vim.lsp.enable("ltex_plus")
 	end,
 }
 

@@ -20,7 +20,7 @@
 ---   by Neovim 0.11+ runtime discovery; `setup()` auto-enables it.
 ---
 --- - Optional ltex-ls-plus integration via `lsp/ltex_plus.lua`. Grammar and
----   spelling checker for markdown, tex, and typst. Dictionaries, disabled
+---   spelling checker for markdown and tex. Dictionaries, disabled
 ---   rules, and hidden false positives are persisted as JSON in
 ---   `~/.local/share/nvim/ltex/`. All functionality is exposed through the
 ---   LSP — diagnostics, code actions, and `_ltex.*` commands — with no
@@ -134,8 +134,7 @@
 --- Disable with `lsp = { marksman = { enabled = false } }` or
 --- `lsp = false` to skip both.
 ---
---- `lua/notes/lsp.lua` injects custom code actions into ltex-ls-plus results;
---- `lua/notes/ltex.lua` reads persisted dictionary/rule data. Both ship
+--- `lua/notes/lsp/init.lua` — in-process server that orchestrates ltex-ls-plus;
 --- with the plugin.
 ---
 --- ## marksman ~
@@ -146,7 +145,7 @@
 ---
 --- ## ltex-ls-plus ~
 ---
---- Grammar and spelling checker for `.md`, `.tex`, and `.typst`. Three
+--- Grammar and spelling checker for `.md`, `.tex`, and . Three
 --- layers of integration:
 ---
 --- 1. **Diagnostics** — free via LSP. Squiggles appear automatically.

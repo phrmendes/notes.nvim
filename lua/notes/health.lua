@@ -41,7 +41,7 @@ function health.check()
 		end
 	end
 
-	vim.health.info("LSP attachment is buffer-scoped; diagnostics appear after attaching to a markdown/tex/typst buffer")
+	vim.health.info("LSP attachment is buffer-scoped; diagnostics appear after attaching to a markdown/tex buffer")
 end
 
 return health

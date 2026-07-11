@@ -30,43 +30,9 @@ local function run_ltex(cmd, arguments)
 	handler({ arguments = { arguments or {} } })
 end
 
-local original_buf_request_all
-local original_get_client_by_id
-
-local function restore_all()
-	require("notes.lsp").reset_code_actions()
-	if original_buf_request_all then
-		patch(vim.lsp, "buf_request_all", original_buf_request_all)
-		original_buf_request_all = nil
-	end
-	if original_get_client_by_id then
-		patch(vim.lsp, "get_client_by_id", original_get_client_by_id)
-		original_get_client_by_id = nil
-	end
-end
-
----@param languages string[]|nil
----@param spell_enabled boolean|nil
-local function mock_client(languages, spell_enabled)
-	return {
-		name = "ltex_plus",
-		config = { settings = { ltex = { languages = languages or { "en-US" }, spellCheck = spell_enabled } } },
-	}
-end
-
----@param result_actions table[]
-local function install_test_request_mock(result_actions)
-	original_buf_request_all = vim.lsp.buf_request_all
-	patch(vim.lsp, "buf_request_all", function(_, method, _, callback)
-		if method == "textDocument/codeAction" then callback({
-			[1] = { result = result_actions, context = { client_id = 1 } },
-		}) end
-	end)
-end
-
 T["lsp setup"] = new_set()
 
-T["lsp setup"]["default enables both marksman and ltex_plus"] = function()
+T["lsp setup"]["ltex_plus never auto-enables"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 
 	child.lua([[
@@ -77,12 +43,11 @@ T["lsp setup"]["default enables both marksman and ltex_plus"] = function()
 	child.lua(string.format([[require("notes.config").setup({ path = %q })]], temp_dir))
 
 	local enabled = child.lua_get("_G.captured_lsp_enable")
-	eq(#enabled, 2)
-	eq(vim.tbl_contains(enabled, "marksman"), true)
-	eq(vim.tbl_contains(enabled, "ltex_plus"), true)
+	eq(#enabled, 1)
+	eq(enabled[1], "marksman")
 end
 
-T["lsp setup"]["can disable marksman"] = function()
+T["lsp setup"]["can disable marksman (ltex_plus stays detached)"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 
 	utils.setup(child, temp_dir)
@@ -94,8 +59,7 @@ T["lsp setup"]["can disable marksman"] = function()
 	child.lua([[require("notes.config").setup({ path = require("notes.config").path, lsp = { marksman = { enabled = false } } })]])
 
 	local enabled = child.lua_get("_G.captured_lsp_enable")
-	eq(#enabled, 1)
-	eq(enabled[1], "ltex_plus")
+	eq(#enabled, 0)
 end
 
 T["lsp setup"]["can disable ltex_plus"] = function()
@@ -166,7 +130,7 @@ T["lsp setup"]["can configure ltex_plus languages via setup"] = function()
 	eq(#notes_langs, 3)
 	eq(vim.tbl_contains(cfg_langs, "en-US"), true)
 	eq(#cfg_langs, 3)
-	eq(#child.lua_get("_G.captured_lsp_enable"), 1)
+	eq(#child.lua_get("_G.captured_lsp_enable"), 0)
 end
 
 T["lsp config"] = new_set()
@@ -205,7 +169,6 @@ T["lsp config"]["ltex_plus.lua is valid"] = function()
 	eq(config.cmd[1], "ltex-ls-plus")
 	eq(config.filetypes[1], "markdown")
 	eq(config.filetypes[2], "tex")
-	eq(config.filetypes[3], "typst")
 	eq(config.single_file_support, true)
 	eq(type(config.on_attach), "function")
 	eq(type(config.settings), "table")
@@ -253,82 +216,6 @@ T["ltex commands"]["addToDictionary sends didChangeConfiguration"] = function()
 
 	local after_calls = vim.tbl_filter(function(n) return n.method == "workspace/didChangeConfiguration" end, client.notified)
 	eq(#after_calls > before, true)
-end
-
-T["ltex commands"]["toggle_spellcheck detaches ltex when attached"] = function()
-	local lsp_config = load_ltex()
-	local client = attach(lsp_config)
-
-	local stopped_id
-	local orig_get_clients = vim.lsp.get_clients
-	patch(vim.lsp, "get_clients", function() return { client } end)
-	client.stop = function(_, force) stopped_id = force end
-
-	run_ltex("_ltex.spellCheck")
-
-	patch(vim.lsp, "get_clients", orig_get_clients)
-	eq(stopped_id, true)
-end
-
-T["ltex commands"]["toggle_spellcheck re-enables ltex when detached"] = function()
-	local lsp_config = load_ltex()
-	attach(lsp_config)
-
-	local enabled
-	local new_client = { id = 99, name = "ltex_plus", _sent = {} }
-	function new_client.notify(_, method, params) table.insert(new_client._sent, { method = method, params = params }) end
-
-	local orig_get_clients = vim.lsp.get_clients
-	local orig_enable = vim.lsp.enable
-	local orig_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_clients", function() return {} end)
-	patch(vim.lsp, "get_client_by_id", function(id) return id == 99 and new_client or nil end)
-	patch(vim.lsp, "enable", function(name) enabled = name end)
-
-	run_ltex("_ltex.spellCheck")
-
-	patch(vim.lsp, "get_clients", orig_get_clients)
-	patch(vim.lsp, "enable", orig_enable)
-	eq(enabled, "ltex_plus")
-
-	-- Manually fire LspAttach for the new client; the autocmd should trigger didChange.
-	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
-	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
-
-	eq(#new_client._sent, 1)
-	eq(new_client._sent[1].method, "textDocument/didChange")
-	eq(new_client._sent[1].params.contentChanges[1].text ~= nil, true)
-
-	-- Flag should be cleared; firing again does not re-trigger.
-	new_client._sent = {}
-	patch(vim.lsp, "get_client_by_id", function(id) return id == 99 and new_client or nil end)
-	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
-	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
-	eq(#new_client._sent, 0)
-end
-
-T["ltex commands"]["toggle_spellcheck clears pending recheck flag on detach"] = function()
-	local lsp_config = load_ltex()
-	local client = attach(lsp_config)
-
-	local stopped_force
-	local orig_get_clients = vim.lsp.get_clients
-	patch(vim.lsp, "get_clients", function() return { client } end)
-	client.stop = function(_, force) stopped_force = force end
-
-	run_ltex("_ltex.spellCheck")
-
-	patch(vim.lsp, "get_clients", orig_get_clients)
-	eq(stopped_force, true)
-
-	-- Detach should clear any pending flag; simulate a stale LspAttach.
-	local new_client = { id = 99, name = "ltex_plus", _sent = {} }
-	function new_client.request(_, method, params) table.insert(new_client._sent, { method = method, params = params }) end
-	local orig_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function(id) return id == 99 and new_client or nil end)
-	vim.api.nvim_exec_autocmds("LspAttach", { buffer = 0, data = { client_id = 99 } })
-	patch(vim.lsp, "get_client_by_id", orig_get_client_by_id)
-	eq(#new_client._sent, 0)
 end
 
 T["ltex commands"]["reload_settings does not send languages to ltex"] = function()
@@ -521,169 +408,6 @@ T["ltex commands"]["notes.ltex_pick_language warns when command not registered"]
 	patch(vim.lsp, "commands", orig_commands)
 	patch(vim, "notify", orig_notify)
 	eq(warned, true)
-end
-
-T["ltex injection"] = new_set({
-	hooks = {
-		pre_case = function() restore_all() end,
-		post_case = function() restore_all() end,
-	},
-})
-
-T["ltex injection"]["setup_code_actions patches vim.lsp.buf_request_all"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local original = vim.lsp.buf_request_all
-	notes_lsp.setup_code_actions()
-
-	eq(vim.lsp.buf_request_all ~= original, true)
-end
-
-T["ltex injection"]["setup_code_actions is idempotent"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	notes_lsp.setup_code_actions()
-	local patched = vim.lsp.buf_request_all
-	notes_lsp.setup_code_actions()
-
-	eq(vim.lsp.buf_request_all, patched)
-end
-
-T["ltex injection"]["injects Pick language for ltex_plus client"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local client = mock_client({ "en-US", "pt-BR" })
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return client end)
-	patch(vim.lsp, "get_clients", function() return { client } end)
-
-	install_test_request_mock({ { title = "server action" } })
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 3)
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Pick language"), true)
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.command and a.command.command end, results[1].result), "_ltex.pickLanguage"), true)
-end
-
-T["ltex injection"]["always injects for ltex_plus regardless of languages"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local client = mock_client({})
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return client end)
-	patch(vim.lsp, "get_clients", function() return { client } end)
-
-	install_test_request_mock({ { title = "server action" } })
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 3)
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Pick language"), true)
-end
-
-T["ltex injection"]["injects Enable spellcheck for non-ltex clients when ltex is detached"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return { name = "marksman", config = { settings = {} } } end)
-	patch(vim.lsp, "get_clients", function() return {} end)
-
-	install_test_request_mock({ { title = "server action" } })
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 2)
-	eq(results[1].result[1].title, "server action")
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Enable spellcheck (current: disabled)"), true)
-end
-
-T["ltex injection"]["does not double-inject if Pick language already present"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local client = mock_client({ "en-US" })
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return client end)
-	patch(vim.lsp, "get_clients", function() return { client } end)
-
-	install_test_request_mock({
-		{ title = "existing", command = { command = "_ltex.pickLanguage" } },
-	})
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 2)
-end
-
-T["ltex injection"]["injects Disable spellcheck alongside Pick language when ltex attached"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local client = mock_client({ "en-US" }, true)
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return client end)
-	patch(vim.lsp, "get_clients", function() return { client } end)
-
-	install_test_request_mock({ { title = "server action" } })
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 3)
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Pick language"), true)
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Disable spellcheck (current: enabled)"), true)
-end
-
-T["ltex injection"]["Disable spellcheck title when spellCheck is false in settings"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local client = mock_client({ "en-US" }, false)
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return client end)
-	patch(vim.lsp, "get_clients", function() return { client } end)
-
-	install_test_request_mock({ { title = "server action" } })
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 3)
-	eq(vim.tbl_contains(vim.tbl_map(function(a) return a.title end, results[1].result), "Disable spellcheck (current: enabled)"), true)
-end
-
-T["ltex injection"]["does not double-inject spellcheck"] = function()
-	local notes_lsp = require("notes.lsp")
-
-	local client = mock_client({ "en-US" }, true)
-	original_get_client_by_id = vim.lsp.get_client_by_id
-	patch(vim.lsp, "get_client_by_id", function() return client end)
-	patch(vim.lsp, "get_clients", function() return { client } end)
-
-	install_test_request_mock({
-		{ title = "existing", command = { command = "_ltex.spellCheck" } },
-	})
-	notes_lsp.setup_code_actions()
-
-	local results
-	vim.lsp.buf_request_all(0, "textDocument/codeAction", function() return {} end, function(r) results = r end)
-
-	assert(results[1])
-	eq(#results[1].result, 2)
 end
 
 return T

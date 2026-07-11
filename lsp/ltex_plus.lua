@@ -16,10 +16,9 @@
 ---@class LtexCheckDocumentParams
 ---@field uri? string
 
-local ltex_data = require("notes.ltex")
+local ltex_data = require("notes.lsp.utils")
 local ltex_path = vim.fs.joinpath(vim.fn.stdpath("data"), "ltex")
 local marker = " [*]"
-local pending = nil
 
 ---@type table<string, LtexPersistSpec>
 local specs = {
@@ -97,31 +96,6 @@ local function pick_language(client, settings)
 	end)
 end
 
---- Detach the ltex client for the current buffer, or re-enable it if detached.
----
---- The ltex server's `_ltex.spellCheck` command (toggled via
---- `workspace/executeCommand` or `didChangeConfiguration`) updates the
---- server's internal flag but does not always republish diagnostics
---- mid-session, so existing squiggles persist. The reliable way to mute ltex
---- is to stop the client: diagnostics vanish immediately because the client
---- no longer exists. Re-enabling via `vim.lsp.enable("ltex_plus")` causes
---- Neovim to re-attach on the markdown/tex/typst buffer. When re-enabling,
---- sets a flag so the `LspAttach` autocmd below automatically triggers
---- `_ltex.checkDocument` on the new client — no manual save required.
----@param bufnr integer Buffer the LSP attached to
-local function toggle_ltex_attachment(bufnr)
-	local clients = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })
-
-	if #clients > 0 then
-		pending = nil
-		clients[1]:stop(true)
-		return
-	end
-
-	pending = bufnr
-	vim.lsp.enable("ltex_plus")
-end
-
 --- Request a re-check of the document from ltex.
 ---@param client vim.lsp.Client
 ---@param bufnr integer
@@ -132,31 +106,6 @@ local function check_document(client, bufnr, command)
 	params.uri = params.uri or vim.uri_from_bufnr(bufnr)
 	client:request("workspace/executeCommand", { command = "_ltex.checkDocument", arguments = { params } })
 end
-
--- When the user re-enables ltex via the Toggle spellcheck code action,
--- ltex-ls-plus does not publish diagnostics until the buffer is saved.
--- `_ltex.checkDocument` during attach conflicts with ltex's initial check
--- (same class of issue documented in notes.lsp). Instead, send a no-op
--- `textDocument/didChange` with the full buffer content — the standard LSP
--- way to nudge a re-evaluation without writing to disk.
-vim.api.nvim_create_autocmd("LspAttach", {
-	callback = function(args)
-		if not pending or args.buf ~= pending then return end
-		local client = vim.lsp.get_client_by_id(args.data.client_id)
-		if not client or client.name ~= "ltex_plus" then return end
-		pending = nil
-		local lines = vim.api.nvim_buf_get_lines(args.buf, 0, -1, false)
-		local text = table.concat(lines, "\n")
-
-		client:notify("textDocument/didChange", {
-			textDocument = {
-				uri = vim.uri_from_bufnr(args.buf),
-				version = vim.api.nvim_buf_get_changedtick(args.buf),
-			},
-			contentChanges = { { text = text } },
-		})
-	end,
-})
 
 --- Append items to a persisted category and update the in-memory settings.
 ---@param category string Settings key (e.g. "dictionary")
@@ -179,7 +128,7 @@ local function make_commands(client, bufnr)
 
 	local lang_list = settings.notes_languages or settings.languages or {}
 
-	vim.iter(ltex_data.read_all()):each(function(setting, langs)
+	vim.iter(ltex_data.read_ltex_data()):each(function(setting, langs)
 		vim.iter(lang_list):each(function(lang) settings[setting][lang] = langs[lang] or {} end)
 	end)
 
@@ -196,7 +145,6 @@ local function make_commands(client, bufnr)
 		end
 	end)
 
-	commands["_ltex.spellCheck"] = function() toggle_ltex_attachment(bufnr) end
 	commands["_ltex.pickLanguage"] = function() pick_language(client, settings) end
 	commands["_ltex.checkDocument"] = function(command) check_document(client, bufnr, command) end
 
@@ -205,7 +153,7 @@ end
 
 return {
 	cmd = { "ltex-ls-plus" },
-	filetypes = { "markdown", "tex", "typst" },
+	filetypes = { "markdown", "tex" },
 	single_file_support = true,
 	init_options = { client = "Neovim" },
 	---@param client vim.lsp.Client
