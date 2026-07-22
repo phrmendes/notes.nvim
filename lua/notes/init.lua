@@ -1,6 +1,6 @@
 --- *notes.nvim* Note-taking in Neovim
 ---
---- Apache-2.0 License Copyright (c) 2024 Pedro Mendes
+--- Apache License 2.0 Copyright (c) 2024 Pedro Mendes
 ---
 --- Features:
 ---
