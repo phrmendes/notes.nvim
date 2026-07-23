@@ -78,6 +78,6 @@ end
 
 lsp.handlers[Methods.shutdown] = function(_, callback) callback(nil, nil) end
 
-lsp.handlers[Methods.exit] = function(_, callback) callback(nil, nil) end
+lsp.handlers[Methods.exit] = function() end
 
 return lsp
