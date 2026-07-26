@@ -17,12 +17,26 @@ local lsp = { handlers = {} }
 function lsp.start(buf)
 	return vim.lsp.start({
 		name = "notes",
-		cmd = function()
+		cmd = function(dispatchers)
+			local closing = false
 			return {
-				request = function(method, params, callback) return utils.dispatch(lsp.handlers, method, params, callback) end,
-				notify = function(method, params) return utils.dispatch(lsp.handlers, method, params) end,
-				is_closing = function() end,
-				terminate = function() end,
+				request = function(method, params, callback)
+					return utils.dispatch(lsp.handlers, method, params, callback)
+				end,
+				notify = function(method, params)
+					if method == Methods.exit then
+						closing = true
+						dispatchers.on_exit(0, 15)
+						return true
+					end
+					return utils.dispatch(lsp.handlers, method, params)
+				end,
+				is_closing = function()
+					return closing
+				end,
+				terminate = function()
+					closing = true
+				end,
 			}
 		end,
 	}, { bufnr = buf, silent = true })
@@ -77,7 +91,5 @@ lsp.handlers[Methods.workspace_executeCommand] = function(_, callback)
 end
 
 lsp.handlers[Methods.shutdown] = function(_, callback) callback(nil, nil) end
-
-lsp.handlers[Methods.exit] = function() end
 
 return lsp

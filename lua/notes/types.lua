@@ -28,6 +28,13 @@
 ---@class NotesMarksmanConfig
 ---@field enabled? boolean Enable marksman LSP on setup (default: true)
 
+--- In-process LSP server stub passed to vim.lsp.start.
+--- @class notes.lsp.Server
+--- @field request fun(method: string, params: table, callback: function): boolean
+--- @field notify fun(method: string, params: table): boolean
+--- @field is_closing fun(): boolean
+--- @field terminate fun(): nil
+
 ---@class NotesLspConfig
 ---@field marksman boolean | NotesMarksmanConfig Auto-enable marksman LSP on setup (default: true)
 ---@field ltex_plus boolean | NotesLtexPlusConfig Auto-enable ltex-ls-plus LSP on setup (default: true)
