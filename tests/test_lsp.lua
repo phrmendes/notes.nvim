@@ -410,4 +410,38 @@ T["ltex commands"]["notes.ltex_pick_language warns when command not registered"]
 	eq(warned, true)
 end
 
+T["notes lsp code actions"] = new_set()
+
+local function load_notes_lsp() return require("notes.lsp") end
+
+T["notes lsp code actions"]["returns Pick language when ltex is attached"] = function()
+	local orig_get_clients = vim.lsp.get_clients
+	patch(vim.lsp, "get_clients", function(_) return { { name = "ltex_plus" } } end)
+
+	local notes_lsp = load_notes_lsp()
+	local captured = nil
+	notes_lsp.handlers[vim.lsp.protocol.Methods.textDocument_codeAction]({}, function(_, result) captured = result end)
+
+	patch(vim.lsp, "get_clients", orig_get_clients)
+
+	eq(#captured, 2)
+	local titles = vim.tbl_map(function(a) return a.title end, captured)
+	eq(vim.tbl_contains(titles, "Pick language"), true)
+	eq(vim.tbl_contains(titles, "Disable spellcheck (current: enabled)"), true)
+end
+
+T["notes lsp code actions"]["does not return Pick language when ltex is detached"] = function()
+	local orig_get_clients = vim.lsp.get_clients
+	patch(vim.lsp, "get_clients", function(_) return {} end)
+
+	local notes_lsp = load_notes_lsp()
+	local captured = nil
+	notes_lsp.handlers[vim.lsp.protocol.Methods.textDocument_codeAction]({}, function(_, result) captured = result end)
+
+	patch(vim.lsp, "get_clients", orig_get_clients)
+
+	eq(#captured, 1)
+	eq(captured[1].title, "Enable spellcheck (current: disabled)")
+end
+
 return T

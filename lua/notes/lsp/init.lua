@@ -1,8 +1,8 @@
 --- In-process LSP server that orchestrates ltex-ls-plus.
 ---
---- Provides a single code action — "Enable spellcheck" / "Disable spellcheck" —
---- that attaches or detaches the real ltex-ls-plus server. When ltex is detached,
---- no other ltex code actions are shown.
+--- Provides two code actions:
+---   - "Enable spellcheck" / "Disable spellcheck" — attaches or detaches ltex-ls-plus.
+---   - "Pick language" — opens the language picker (only when ltex is attached).
 --- @module "notes.lsp"
 
 local utils = require("notes.lsp.utils")
@@ -20,9 +20,7 @@ function lsp.start(buf)
 		cmd = function(dispatchers)
 			local closing = false
 			return {
-				request = function(method, params, callback)
-					return utils.dispatch(lsp.handlers, method, params, callback)
-				end,
+				request = function(method, params, callback) return utils.dispatch(lsp.handlers, method, params, callback) end,
 				notify = function(method, params)
 					if method == Methods.exit then
 						closing = true
@@ -31,12 +29,8 @@ function lsp.start(buf)
 					end
 					return utils.dispatch(lsp.handlers, method, params)
 				end,
-				is_closing = function()
-					return closing
-				end,
-				terminate = function()
-					closing = true
-				end,
+				is_closing = function() return closing end,
+				terminate = function() closing = true end,
 			}
 		end,
 	}, { bufnr = buf, silent = true })
@@ -55,14 +49,14 @@ lsp.handlers[Methods.initialize] = function(_, callback)
 	})
 end
 
---- Code action: enable or disable ltex-ls-plus based on current state.
+--- Code actions: enable or disable ltex-ls-plus and pick language.
 --- @param _ lsp.CodeActionParams
 --- @param callback fun(err?: lsp.ResponseError, result: lsp.CodeAction[])
 lsp.handlers[Methods.textDocument_codeAction] = function(_, callback)
 	local ltex_attached = #vim.lsp.get_clients({ name = "ltex_plus", bufnr = 0 }) > 0
 	local title = ltex_attached and "Disable spellcheck (current: enabled)" or "Enable spellcheck (current: disabled)"
 
-	callback(nil, {
+	local actions = {
 		{
 			title = title,
 			command = {
@@ -71,7 +65,18 @@ lsp.handlers[Methods.textDocument_codeAction] = function(_, callback)
 				arguments = {},
 			},
 		},
-	})
+	}
+
+	if ltex_attached then table.insert(actions, {
+		title = "Pick language",
+		command = {
+			title = "Pick language",
+			command = "_ltex.pickLanguage",
+			arguments = {},
+		},
+	}) end
+
+	callback(nil, actions)
 end
 
 --- Execute the toggle spellcheck command.
