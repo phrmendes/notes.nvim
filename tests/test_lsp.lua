@@ -6,6 +6,37 @@ local child, T = utils.new_child_set()
 
 local patch = utils.patch
 local function load_ltex() return loadfile(vim.fs.joinpath(vim.uv.cwd(), "lsp", "ltex_plus.lua"))() end
+local function load_marksman() return loadfile(vim.fs.joinpath(vim.uv.cwd(), "lsp", "marksman.lua"))() end
+
+--- Start real marksman without a workspace folder and return the file-operation
+--- globs it advertises. That mode is what used to produce `**/*.{}`.
+---@param ch MiniTest.child
+---@return string[]
+local function marksman_globs(ch)
+	return ch.lua([[
+		local cfg = vim.deepcopy(vim.lsp.config["marksman"])
+		cfg.root_dir = false
+
+		local id = vim.lsp.start(cfg)
+		vim.wait(10000, function()
+			local c = vim.lsp.get_client_by_id(id)
+			return c ~= nil and c.initialized
+		end, 100)
+
+		local client = assert(vim.lsp.get_client_by_id(id), "marksman did not start")
+		local ops = vim.tbl_get(client.server_capabilities, "workspace", "fileOperations") or {}
+
+		local globs = {}
+		for _, spec in pairs(ops) do
+			for _, filter in ipairs(spec.filters or {}) do
+				table.insert(globs, filter.pattern.glob)
+			end
+		end
+
+		client:stop()
+		return globs
+	]])
+end
 
 local function make_client(lsp_config)
 	local client = {
@@ -158,6 +189,52 @@ T["lsp config"]["marksman uses root_markers"] = function()
 	eq(vim.tbl_contains(config.root_markers, ".marksman.toml"), true)
 	eq(vim.tbl_contains(config.root_markers, ".git"), true)
 	eq(config.root_dir, nil)
+end
+
+T["lsp config"]["marksman on_init repairs the empty file-operation glob"] = function()
+	local config = load_marksman()
+
+	local client = {
+		server_capabilities = {
+			workspace = {
+				fileOperations = {
+					didCreate = { filters = { { pattern = { glob = "**/*.{}" } } } },
+					didDelete = { filters = { { pattern = { glob = "**/*.{}" } } } },
+				},
+			},
+		},
+	}
+
+	config.on_init(client)
+
+	eq(client.server_capabilities.workspace.fileOperations.didCreate.filters[1].pattern.glob, "**/*.{md,markdown}")
+	eq(client.server_capabilities.workspace.fileOperations.didDelete.filters[1].pattern.glob, "**/*.{md,markdown}")
+end
+
+T["lsp config"]["marksman on_init keeps a valid glob"] = function()
+	local config = load_marksman()
+
+	local client = { server_capabilities = { workspace = { fileOperations = { didDelete = { filters = { { pattern = { glob = "**/*.{md}" } } } } } } } }
+	config.on_init(client)
+
+	eq(client.server_capabilities.workspace.fileOperations.didDelete.filters[1].pattern.glob, "**/*.{md}")
+end
+
+T["lsp config"]["marksman on_init tolerates missing capabilities"] = function()
+	local config = load_marksman()
+
+	eq(pcall(config.on_init, { server_capabilities = {} }), true)
+end
+
+-- Regression test for the `**/*.{}` workaround in `lsp/marksman.lua`.
+T["lsp config"]["marksman globs are valid with a real server"] = function()
+	if not child.lua_get([[vim.fn.executable("marksman") == 1]]) then MiniTest.skip("marksman not installed") end
+
+	local globs = marksman_globs(child)
+	local invalid = vim.iter(globs):filter(function(glob) return not pcall(vim.glob.to_lpeg, glob) end):totable()
+
+	eq(#globs > 0, true)
+	eq(invalid, {})
 end
 
 T["lsp config"]["ltex_plus.lua is valid"] = function()
@@ -419,7 +496,8 @@ T["notes lsp code actions"]["returns Pick language when ltex is attached"] = fun
 	patch(vim.lsp, "get_clients", function(_) return { { name = "ltex_plus" } } end)
 
 	local notes_lsp = load_notes_lsp()
-	local captured = nil
+	---@type lsp.CodeAction[]
+	local captured = {}
 	notes_lsp.handlers[vim.lsp.protocol.Methods.textDocument_codeAction]({}, function(_, result) captured = result end)
 
 	patch(vim.lsp, "get_clients", orig_get_clients)
@@ -435,7 +513,8 @@ T["notes lsp code actions"]["does not return Pick language when ltex is detached
 	patch(vim.lsp, "get_clients", function(_) return {} end)
 
 	local notes_lsp = load_notes_lsp()
-	local captured = nil
+	---@type lsp.CodeAction[]
+	local captured = {}
 	notes_lsp.handlers[vim.lsp.protocol.Methods.textDocument_codeAction]({}, function(_, result) captured = result end)
 
 	patch(vim.lsp, "get_clients", orig_get_clients)

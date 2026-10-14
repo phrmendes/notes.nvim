@@ -7,6 +7,7 @@
     ripgrep
     fd
     ltex-ls-plus
+    marksman
   ];
 
   scripts = {
