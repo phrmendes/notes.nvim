@@ -79,17 +79,19 @@ lsp.handlers[Methods.textDocument_codeAction] = function(_, callback)
 	callback(nil, actions)
 end
 
---- Execute the toggle spellcheck command.
+--- Execute the toggle spellcheck command for the current buffer only.
 --- @param _ lsp.ExecuteCommandParams
 --- @param callback fun(err?: lsp.ResponseError, result: any)
 lsp.handlers[Methods.workspace_executeCommand] = function(_, callback)
 	local bufnr = vim.api.nvim_get_current_buf()
-	local clients = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })
+	local client = vim.lsp.get_clients({ name = "ltex_plus", bufnr = bufnr })[1]
 
-	if #clients > 0 then
-		clients[1]:stop(true)
+	if client then
+		-- Detach, do not stop: other buffers may share this client.
+		vim.lsp.buf_detach_client(bufnr, client.id)
 	else
-		vim.lsp.enable("ltex_plus")
+		local ok, err = pcall(vim.lsp.start, vim.lsp.config.ltex_plus, { bufnr = bufnr })
+		if not ok then vim.notify("Could not start ltex-ls-plus: " .. tostring(err), vim.log.levels.ERROR) end
 	end
 
 	callback(nil, {})

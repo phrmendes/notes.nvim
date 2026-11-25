@@ -22,7 +22,7 @@
 ---@field additionals? string[] Extra languages shown in the picker
 
 ---@class NotesLtexPlusConfig
----@field enabled? boolean Enable ltex-ls-plus LSP on setup (default: true)
+---@field enabled? boolean Configure ltex-ls-plus on setup. The server starts on demand (default: true)
 ---@field languages? NotesLtexLanguages Language configuration
 
 ---@class NotesMarksmanConfig
@@ -37,4 +37,4 @@
 
 ---@class NotesLspConfig
 ---@field marksman boolean | NotesMarksmanConfig Auto-enable marksman LSP on setup (default: true)
----@field ltex_plus boolean | NotesLtexPlusConfig Auto-enable ltex-ls-plus LSP on setup (default: true)
+---@field ltex_plus boolean | NotesLtexPlusConfig Configure ltex-ls-plus on setup. The server starts on demand (default: true)

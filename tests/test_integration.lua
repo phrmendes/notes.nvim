@@ -23,6 +23,34 @@ T["integration"]["full create and search flow"] = function()
 	eq(content[3], "**Tags:** #test, #integration")
 end
 
+T["integration"]["cancelling the title creates no note"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	utils.setup(child, temp_dir, "native")
+	utils.mock.cancel_input(child)
+	child.lua([[require("notes").new()]])
+
+	local files = child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", temp_dir))
+	eq(#files, 0)
+end
+
+T["integration"]["cancelling the tags creates no note"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	utils.setup(child, temp_dir, "native")
+	child.lua([[
+		local calls = 0
+		vim.ui.input = function(_, callback)
+			calls = calls + 1
+			callback(calls == 1 and "Title only" or nil)
+		end
+	]])
+	child.lua([[require("notes").new()]])
+
+	local files = child.lua_get(string.format("vim.fn.glob(%q .. '/*.md', 0, 1)", temp_dir))
+	eq(#files, 0)
+end
+
 T["integration"]["search lists created note"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 

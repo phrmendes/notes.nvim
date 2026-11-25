@@ -1,6 +1,6 @@
 *notes.nvim* Note-taking in Neovim
 
-Apache-2.0 License Copyright (c) 2024 Pedro Mendes
+Apache License 2.0 Copyright (c) 2024 Pedro Mendes
 
 Features:
 
@@ -94,7 +94,7 @@ Default values:
 - `path` — `~/Documents/notes`
 - `picker` — `"native"` (or `"mini"` if `mini.pick` is available)
 - `lsp.marksman` — `{ enabled = true }` (auto-enable marksman)
-- `lsp.ltex_plus` — `{ enabled = true }` (auto-enable ltex-ls-plus)
+- `lsp.ltex_plus` — `{ enabled = true }` (configure ltex-ls-plus; start on demand)
 - `journal.title_format` — `"%Y-%m-%d"`
 
 Usage ~
@@ -105,7 +105,7 @@ Usage ~
     lsp = {
       marksman = { enabled = true },           -- disable with `{ enabled = false }`
       ltex_plus = {
-        enabled = true,
+        enabled = true,                       -- configure only; start on demand
         languages = { default = "en-US", additionals = { "pt-BR" } },
       },
     },
@@ -131,8 +131,10 @@ Switch at runtime with `notes.set_picker("name")`.
 
 The plugin ships `lsp/marksman.lua` and `lsp/ltex_plus.lua` at the
 project root. Neovim 0.11+ auto-discovers them when you call
-`vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`. The
-plugin's `setup()` triggers these enables automatically.
+`vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`.
+`setup()` enables marksman automatically. For ltex-ls-plus it only
+registers the settings and the helper server. Start LTeX with the
+"Enable spellcheck" code action or `vim.lsp.enable("ltex_plus")`.
 Disable with `lsp = { marksman = { enabled = false } }` or
 `lsp = false` to skip both.
 
@@ -162,11 +164,9 @@ layers of integration:
    - `_ltex.addToDictionary` (server) — appends words, persists to JSON
    - `_ltex.disableRules` (server) — appends rule IDs, persists
    - `_ltex.hideFalsePositives` (server) — appends, persists
-   - `_ltex.spellCheck` (client) — detach/reattach ltex on the current buffer
-     (mutes all ltex hints until re-enabled; exposed in the code action
-     menu as "Disable/Enable spellcheck (current: enabled/disabled)").
-     Re-enabling automatically triggers a document re-check so diagnostics
-     appear without saving.
+   - `notes.toggle_spellcheck` (client) — detaches ltex from the current
+     buffer or starts it again for that buffer. Other buffers keep their
+     own state (the code action menu shows "Disable/Enable spellcheck").
    - `_ltex.pickLanguage` (client) — `vim.ui.select` language picker
    - `_ltex.checkDocument` (client) — request re-check
 
@@ -261,7 +261,8 @@ Usage ~
 Create a new note
 
 Prompts for title and tags interactively, then creates the note and opens
-it. Empty title becomes "untitled".
+it. Cancelling either prompt creates nothing. Empty title becomes
+"untitled".
 
 Parameters ~
 {path} `(string|nil)` Directory to create the note in (defaults to config path)
@@ -349,5 +350,464 @@ Usage ~
   require('notes').set_picker('mini')
   require('notes').set_picker('native')
 <
+
+==============================================================================
+------------------------------------------------------------------------------
+A simple note taking plugin for neovim.
+
+------------------------------------------------------------------------------
+                                                                      *defaults*
+                                   `defaults`
+Type ~
+`(UserConfig)`
+
+------------------------------------------------------------------------------
+                                                                   *config.path*
+                                 `config.path`
+Type ~
+`(string)`
+
+------------------------------------------------------------------------------
+                                                                 *config.picker*
+                                `config.picker`
+Type ~
+`(PickerBackend?)`
+
+------------------------------------------------------------------------------
+                                                         *config.ltex_languages*
+                            `config.ltex_languages`
+Type ~
+`(string[])`
+
+------------------------------------------------------------------------------
+                                                                *config.journal*
+                                `config.journal`
+Type ~
+`(NotesJournalConfig)`
+
+------------------------------------------------------------------------------
+                                                                       *servers*
+                                   `servers`
+Type ~
+`(table<string, fun(opts: boolean | table | nil)>)`
+
+------------------------------------------------------------------------------
+                                                                *config.setup()*
+                             `config.setup`({opts})
+Setup configuration
+Parameters ~
+{opts} `(UserConfig | nil)` User configuration options
+
+------------------------------------------------------------------------------
+                                                           *config.set_picker()*
+                          `config.set_picker`({name})
+Swap the active picker at runtime
+Parameters ~
+{name} `(string)` Backend name ("native", "mini", "custom", or registered)
+
+
+==============================================================================
+------------------------------------------------------------------------------
+                                                                        *health*
+                                    `health`
+Health check for notes.nvim
+
+
+==============================================================================
+------------------------------------------------------------------------------
+
+Journal module for notes.nvim
+
+------------------------------------------------------------------------------
+                                                                *resolve_time()*
+                             `resolve_time`({date})
+Resolve a date string to a time value
+Parameters ~
+{date} `(string | nil)`
+Return ~
+`(integer | nil)` time
+Return ~
+`(string | nil)` error_message
+
+------------------------------------------------------------------------------
+                                                                  *build_path()*
+                      `build_path`({time}, {journal_path})
+Build the title and full path for a journal entry
+Parameters ~
+{time} `(integer)`
+{journal_path} `(string)`
+Return ~
+`(string)` title
+Return ~
+`(string)` full_path
+
+------------------------------------------------------------------------------
+                                                                 *write_entry()*
+                     `write_entry`({path}, {title}, {tags})
+Write journal entry content to disk
+Parameters ~
+{path} `(string)`
+{title} `(string)`
+{tags} `(string | nil)`
+Return ~
+`(string | nil)` full_path or nil on failure
+
+------------------------------------------------------------------------------
+                                                                *journal.open()*
+                         `journal.open`({date}, {tags})
+Open or create a journal entry for the given date
+Parameters ~
+{date} `(string | nil)` Date in YYYY-MM-DD format (defaults to today)
+{tags} `(string | nil)` Comma-separated user tags
+Return ~
+`(string | nil)` The path of the journal entry, or nil if creation failed
+
+
+==============================================================================
+------------------------------------------------------------------------------
+
+Note creation module for notes.nvim
+
+------------------------------------------------------------------------------
+                                                                 *note.create()*
+                     `note.create`({title}, {tags}, {path})
+Create a new note
+Parameters ~
+{title} `(string)` The title of the note
+{tags} `(string | nil)` Comma-separated tags (optional)
+{path} `(string | nil)` Custom path for the note (optional)
+Return ~
+`(string | nil)` The path of the created note, or nil if creation failed
+
+
+==============================================================================
+------------------------------------------------------------------------------
+Type definitions for notes.nvim
+
+All `@class` definitions live here so they can be consulted from a single place.
+Other files reference types by name; LuaLS resolves them via the workspace.
+
+------------------------------------------------------------------------------
+Class ~
+{UserConfig}
+Fields ~
+{path} `(string)` Path to the notes directory
+{picker} `(string)` Picker backend name
+{lsp} `(NotesLspConfig | nil)` LSP configuration
+{journal} `(NotesJournalConfig | nil)` Journal configuration
+
+------------------------------------------------------------------------------
+Class ~
+{PickerBackend}
+Fields ~
+{files} `(fun(items: string[], dir: string, on_choice: fun(choice: string|nil)))`
+{grep} `(fun(dir: string, glob: string, on_choice: fun(choice: string|nil)))`
+
+------------------------------------------------------------------------------
+Class ~
+{NotesJournalConfig}
+Fields ~
+{path} `(string | nil)`
+{title_format} `(optional)` `(string)`
+
+------------------------------------------------------------------------------
+Class ~
+{NotesLtexLanguages}
+Fields ~
+{default} `(optional)` `(string)` Starting language code (maps to ltex `language`, default: "en-US")
+{additionals} `(optional)` `(string[])` Extra languages shown in the picker
+
+------------------------------------------------------------------------------
+Class ~
+{NotesLtexPlusConfig}
+Fields ~
+{enabled} `(optional)` `(boolean)` Configure ltex-ls-plus on setup. The server starts on demand (default: true)
+{languages} `(optional)` `(NotesLtexLanguages)` Language configuration
+
+------------------------------------------------------------------------------
+Class ~
+{NotesMarksmanConfig}
+Fields ~
+{enabled} `(optional)` `(boolean)` Enable marksman LSP on setup (default: true)
+
+------------------------------------------------------------------------------
+In-process LSP server stub passed to vim.lsp.start.
+@class notes.lsp.Server
+@field request fun(method: string, params: table, callback: function): boolean
+@field notify fun(method: string, params: table): boolean
+@field is_closing fun(): boolean
+@field terminate fun(): nil
+
+------------------------------------------------------------------------------
+Class ~
+{NotesLspConfig}
+Fields ~
+{marksman} `(boolean | NotesMarksmanConfig)` Auto-enable marksman LSP on setup (default: true)
+{ltex_plus} `(boolean | NotesLtexPlusConfig)` Configure ltex-ls-plus on setup. The server starts on demand (default: true)
+
+
+==============================================================================
+------------------------------------------------------------------------------
+
+Pure utility functions for notes.nvim
+
+------------------------------------------------------------------------------
+                                                             *utils.normalize()*
+                           `utils.normalize`({input})
+Normalizes a word by converting it to lowercase, then replacing accented
+characters with their unaccented equivalents, and replacing spaces and non-word characters with hyphens.
+Parameters ~
+{input} `(string)` The input to normalize.
+Return ~
+`(string)` normalized_string The normalized input.
+
+------------------------------------------------------------------------------
+                                                           *utils.create_tags()*
+                       `utils.create_tags`({str}, {sep})
+Creates a string of tags from a string.
+Parameters ~
+{str} `(string)` The string to split.
+{sep} `(string)` The separator to use for splitting the string.
+Return ~
+`(string)` tags A string with tags separated by commas and prefixed with #.
+
+------------------------------------------------------------------------------
+                                                           *utils.generate_id()*
+                        `utils.generate_id`({n}, {char})
+Generates a random string of characters or numbers.
+Parameters ~
+{n} `(number)` The length of the string.
+{char} `(optional)` `(boolean)` If true, generates random uppercase letters; otherwise, generates random numbers.
+Return ~
+`(string)` random_str A string of random characters or numbers.
+
+------------------------------------------------------------------------------
+                                                      *utils.generate_file_id()*
+                           `utils.generate_file_id`()
+Generates a file ID with date prefix.
+Return ~
+`(string)` file_id A string in format YYYYMMDDXXXX (date + 4 random uppercase letters)
+
+------------------------------------------------------------------------------
+                                                            *utils.parse_date()*
+                       `utils.parse_date`({date_string})
+Parse a YYYY-MM-DD date string into a time value
+Parameters ~
+{date_string} `(string)`
+Return ~
+`(integer|nil)` time The date as os.time(), or nil if invalid
+
+------------------------------------------------------------------------------
+                                                   *utils.write_markdown_file()*
+       `utils.write_markdown_file`({full_path}, {lines}, {label}, {mode})
+Write content to disk and open the file
+Parameters ~
+{full_path} `(string)`
+{lines} `(string[])` Content lines
+{label} `(string)` Human-readable label for error messages
+{mode} `(optional)` `(string)` File open mode (default "w")
+Return ~
+`(string | nil)` full_path or nil on failure
+
+------------------------------------------------------------------------------
+                                                                *utils.mkdirp()*
+                             `utils.mkdirp`({path})
+Create directory and parents if they don't exist
+Parameters ~
+{path} `(string)`
+Return ~
+`(boolean)` created Whether a directory was created
+
+------------------------------------------------------------------------------
+                                                                  *utils.edit()*
+                          `utils.edit`({path}, {lnum})
+Open a file in the current buffer
+
+Handles two common cases that would otherwise prompt the user:
+
+1. A stale `.swp` file from a previous Neovim session (E13: "File
+   exists and is not a new version"). This happens when the file
+   was modified externally between sessions — the plugin writes
+   files via `fs_open` after the user has typed the title, which
+   makes any swap file from a prior crash definitively stale.
+
+2. The file is already loaded in another buffer (W13: "File has
+   changed since editing started"). In that case we switch to the
+   existing buffer and trigger a reload check.
+
+Parameters ~
+{path} `(string|nil)`
+{lnum} `(number|nil)` Line number to position the cursor at
+
+------------------------------------------------------------------------------
+                                                      *utils.coerce_to_string()*
+                        `utils.coerce_to_string`({item})
+Parameters ~
+{item} `(any)`
+Return ~
+`(string)`
+
+
+==============================================================================
+------------------------------------------------------------------------------
+In-process LSP server that orchestrates ltex-ls-plus.
+
+Provides two code actions:
+  - "Enable spellcheck" / "Disable spellcheck" — attaches or detaches ltex-ls-plus.
+  - "Pick language" — opens the language picker (only when ltex is attached).
+@module "notes.lsp"
+
+------------------------------------------------------------------------------
+                                                                           *lsp*
+                                     `lsp`
+@class notes.lsp
+
+------------------------------------------------------------------------------
+                                                                   *lsp.start()*
+                               `lsp.start`({buf})
+Start the in-process notes server for the given buffer.
+@param buf integer
+@return integer? client_id
+
+------------------------------------------------------------------------------
+                                            *lsp.handlers[Methods.initialize]()*
+              `lsp.handlers[Methods.initialize]`({_}, {callback})
+@param _ lsp.InitializeParams
+@param callback fun(err?: lsp.ResponseError, result: lsp.InitializeResult)
+
+------------------------------------------------------------------------------
+                               *lsp.handlers[Methods.textDocument_codeAction]()*
+        `lsp.handlers[Methods.textDocument_codeAction]`({_}, {callback})
+Code actions: enable or disable ltex-ls-plus and pick language.
+@param _ lsp.CodeActionParams
+@param callback fun(err?: lsp.ResponseError, result: lsp.CodeAction[])
+
+------------------------------------------------------------------------------
+                              *lsp.handlers[Methods.workspace_executeCommand]()*
+       `lsp.handlers[Methods.workspace_executeCommand]`({_}, {callback})
+Execute the toggle spellcheck command for the current buffer only.
+@param _ lsp.ExecuteCommandParams
+@param callback fun(err?: lsp.ResponseError, result: any)
+
+
+==============================================================================
+------------------------------------------------------------------------------
+Shared utilities for the notes LSP module.
+@module "notes.lsp.utils"
+
+------------------------------------------------------------------------------
+                                                              *utils.dispatch()*
+                 `utils.dispatch`({handlers}, {method}, {...})
+Dispatch an LSP method call to the matching handler.
+@param handlers table<string, function>
+@param method string
+@vararg any
+@return boolean
+
+------------------------------------------------------------------------------
+                                                        *utils.read_ltex_data()*
+                            `utils.read_ltex_data`()
+Read all persisted ltex data (dictionary, disabledRules, hiddenFalsePositives).
+@return table<string, table<string, string[]>>
+
+
+==============================================================================
+------------------------------------------------------------------------------
+Picker module for notes.nvim
+
+------------------------------------------------------------------------------
+                                                                *picker.files()*
+                             `picker.files`({dir})
+Search for notes (list .md files)
+Parameters ~
+{dir} `(string | nil)` Directory to search (defaults to config path)
+
+------------------------------------------------------------------------------
+                                                                 *picker.grep()*
+                              `picker.grep`({dir})
+Grep in notes
+Parameters ~
+{dir} `(string | nil)` Directory to search (defaults to config path)
+
+
+==============================================================================
+------------------------------------------------------------------------------
+Mini.pick backend
+
+------------------------------------------------------------------------------
+                                                                  *mini.files()*
+                   `mini.files`({items}, {dir}, {on_choice})
+Parameters ~
+{dir} `(string)`
+{on_choice} `(fun(choice: string|nil))`
+
+------------------------------------------------------------------------------
+                                                                   *mini.grep()*
+                    `mini.grep`({dir}, {glob}, {on_choice})
+Parameters ~
+{dir} `(string)`
+{glob} `(string)`
+{on_choice} `(fun(choice: string|nil))`
+
+
+==============================================================================
+------------------------------------------------------------------------------
+Native picker backend — uses vim.ui.select / vim.ui.input
+
+------------------------------------------------------------------------------
+                                                                *native.files()*
+                   `native.files`({items}, {_}, {on_choice})
+Parameters ~
+{_} `(string|nil)`
+{on_choice} `(fun(choice: string|nil))`
+
+------------------------------------------------------------------------------
+                                                                 *native.grep()*
+                   `native.grep`({dir}, {glob}, {on_choice})
+Parameters ~
+{dir} `(string)`
+{glob} `(string)`
+{on_choice} `(fun(choice: string|nil))`
+
+
+==============================================================================
+------------------------------------------------------------------------------
+Picker-specific utilities
+
+------------------------------------------------------------------------------
+                                                         *utils.list_md_files()*
+                          `utils.list_md_files`({dir})
+Collect all .md files recursively from a directory
+Parameters ~
+{dir} `(string)`
+Return ~
+`(string[])` Sorted absolute paths
+
+------------------------------------------------------------------------------
+                                                                    *utils.rg()*
+                      `utils.rg`({dir}, {glob}, {pattern})
+Run ripgrep and return parsed lines
+Parameters ~
+{dir} `(string)`
+{glob} `(string)`
+{pattern} `(string)`
+Return ~
+`(string[]|nil)` Lines in "file:lnum:text" format, or nil on error
+
+------------------------------------------------------------------------------
+                                                            *utils.get_picker()*
+                              `utils.get_picker`()
+Resolve the active picker or fall back to native
+Return ~
+`(PickerBackend)`
+
+------------------------------------------------------------------------------
+                                                             *utils.on_choice()*
+                          `utils.on_choice`({choice})
+Handle a chosen item — parses file:lnum: or bare path, then opens it.
+Override via `require("notes.picker").on_choice` to change how notes are opened.
+Parameters ~
+{choice} `(string|nil)`
+
 
  vim:tw=78:ts=8:noet:ft=help:norl:

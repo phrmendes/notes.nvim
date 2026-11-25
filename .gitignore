@@ -1,3 +1,7 @@
 deps/
+.pre-commit-config.yaml
 .devenv
 todo.txt
+
+# Share the devenv direnv entry point.
+!.envrc

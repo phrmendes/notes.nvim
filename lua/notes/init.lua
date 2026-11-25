@@ -93,7 +93,7 @@
 --- - `path` — `~/Documents/notes`
 --- - `picker` — `"native"` (or `"mini"` if `mini.pick` is available)
 --- - `lsp.marksman` — `{ enabled = true }` (auto-enable marksman)
---- - `lsp.ltex_plus` — `{ enabled = true }` (auto-enable ltex-ls-plus)
+--- - `lsp.ltex_plus` — `{ enabled = true }` (configure ltex-ls-plus; start on demand)
 --- - `journal.title_format` — `"%Y-%m-%d"`
 ---
 ---@usage >lua
@@ -103,7 +103,7 @@
 ---     lsp = {
 ---       marksman = { enabled = true },           -- disable with `{ enabled = false }`
 ---       ltex_plus = {
----         enabled = true,
+---         enabled = true,                       -- configure only; start on demand
 ---         languages = { default = "en-US", additionals = { "pt-BR" } },
 ---       },
 ---     },
@@ -129,8 +129,10 @@
 ---
 --- The plugin ships `lsp/marksman.lua` and `lsp/ltex_plus.lua` at the
 --- project root. Neovim 0.11+ auto-discovers them when you call
---- `vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`. The
---- plugin's `setup()` triggers these enables automatically.
+--- `vim.lsp.enable("marksman")` or `vim.lsp.enable("ltex_plus")`.
+--- `setup()` enables marksman automatically. For ltex-ls-plus it only
+--- registers the settings and the helper server. Start LTeX with the
+--- "Enable spellcheck" code action or `vim.lsp.enable("ltex_plus")`.
 --- Disable with `lsp = { marksman = { enabled = false } }` or
 --- `lsp = false` to skip both.
 ---
@@ -160,11 +162,9 @@
 ---    - `_ltex.addToDictionary` (server) — appends words, persists to JSON
 ---    - `_ltex.disableRules` (server) — appends rule IDs, persists
 ---    - `_ltex.hideFalsePositives` (server) — appends, persists
----    - `_ltex.spellCheck` (client) — detach/reattach ltex on the current buffer
----      (mutes all ltex hints until re-enabled; exposed in the code action
----      menu as "Disable/Enable spellcheck (current: enabled/disabled)").
----      Re-enabling automatically triggers a document re-check so diagnostics
----      appear without saving.
+---    - `notes.toggle_spellcheck` (client) — detaches ltex from the current
+---      buffer or starts it again for that buffer. Other buffers keep their
+---      own state (the code action menu shows "Disable/Enable spellcheck").
 ---    - `_ltex.pickLanguage` (client) — `vim.ui.select` language picker
 ---    - `_ltex.checkDocument` (client) — request re-check
 ---
@@ -261,7 +261,8 @@ function notes.setup(opts) config.setup(opts) end
 --- Create a new note
 ---
 --- Prompts for title and tags interactively, then creates the note and opens
---- it. Empty title becomes "untitled".
+--- it. Cancelling either prompt creates nothing. Empty title becomes
+--- "untitled".
 ---
 --- Parameters ~
 --- {path} `(string|nil)` Directory to create the note in (defaults to config path)
@@ -272,7 +273,12 @@ function notes.setup(opts) config.setup(opts) end
 --- <
 function notes.new(path)
 	vim.ui.input({ prompt = "Title: " }, function(title)
-		vim.ui.input({ prompt = "Tags (comma-separated): " }, function(tags) note.create(title, tags, path) end)
+		-- nil means the prompt was cancelled, not an empty title.
+		if title == nil then return end
+		vim.ui.input({ prompt = "Tags (comma-separated): " }, function(tags)
+			if tags == nil then return end
+			note.create(title, tags, path)
+		end)
 	end)
 end
 

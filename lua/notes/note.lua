@@ -19,9 +19,9 @@ function note.create(title, tags, path)
 	path = path or config.path
 	utils.mkdirp(path)
 
-	local file_id = utils.generate_file_id()
-	local filename = file_id .. "-" .. utils.normalize(title) .. ".md"
-	local full_path = vim.fs.joinpath(path, filename)
+	local slug = utils.normalize(title)
+	if slug == "" then slug = "untitled" end
+
 	local lines = { "# " .. title, "" }
 
 	if tags and tags ~= "" then
@@ -30,7 +30,20 @@ function note.create(title, tags, path)
 		table.insert(lines, "")
 	end
 
-	return utils.write_markdown_file(full_path, lines, "note")
+	-- `wx` never truncates an existing note. Retry with a new ID on collision.
+	for _ = 1, 5 do
+		local filename = utils.generate_file_id() .. "-" .. slug .. ".md"
+		local full_path = vim.fs.joinpath(path, filename)
+		local written = utils.write_markdown_file(full_path, lines, "note", "wx")
+		if written then return written end
+		if not vim.uv.fs_stat(full_path) then
+			vim.notify("Failed to create note: could not open file", vim.log.levels.ERROR)
+			return nil
+		end
+	end
+
+	vim.notify("Failed to create note: no unused file name", vim.log.levels.ERROR)
+	return nil
 end
 
 return note

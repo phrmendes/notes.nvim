@@ -49,6 +49,7 @@ utils.read_file = function(child, file_path) return child.lua_get(string.format(
 utils.create_note_files = function(child, dir, files)
 	vim.iter(files):each(function(filename, content)
 		local full_path = vim.fs.joinpath(dir, filename)
+		vim.fn.mkdir(vim.fs.dirname(full_path), "p")
 		local content_table = vim.iter(vim.split(content, "\n")):map(function(line) return string.format("%q", line) end):totable()
 
 		child.lua(string.format("vim.fn.writefile({ %s }, %q)", table.concat(content_table, ", "), full_path))
@@ -98,6 +99,14 @@ end
 ---@return table
 function utils.mock.select_items(child) return child.lua_get("_G.mocked_select[1]") end
 
+--- Mock vim.ui.input as cancelled (callback gets nil)
+---@param child MiniTest.child
+function utils.mock.cancel_input(child)
+	child.lua([[
+		vim.ui.input = function(_, callback) callback(nil) end
+	]])
+end
+
 --- Mock vim.ui.input with a single canned response
 ---@param child MiniTest.child
 ---@param response string
@@ -143,15 +152,19 @@ function utils.mock.notify_message(child) return child.lua_get("_G.mocked_notify
 function utils.mock.cmd(child)
 	child.lua([[
 		_G.mocked_cmds = {}
+		vim.api.nvim_cmd = function(cmd)
+			table.insert(_G.mocked_cmds, { cmd = cmd.cmd, args = cmd.args, magic = cmd.magic })
+		end
+		-- Any leftover string command is a test failure; capture it too.
 		vim.cmd = function(cmd)
-			table.insert(_G.mocked_cmds, cmd)
+			table.insert(_G.mocked_cmds, { cmd = ":" .. tostring(cmd) })
 		end
 	]])
 end
 
 --- Get commands captured by mock.cmd
 ---@param child MiniTest.child
----@return string[]
+---@return table[]
 function utils.mock.cmds(child) return child.lua_get("_G.mocked_cmds") or {} end
 
 --- Setup notes configuration in the child process
@@ -182,6 +195,7 @@ function utils.mock_mini_pick(child)
 				grep_live = function(opts, source_opts)
 					_G.captured_globs = opts.globs
 					_G.captured_cwd = source_opts.source.cwd
+					_G.captured_choose = source_opts.source.choose
 				end,
 			},
 			default_show = function() end,

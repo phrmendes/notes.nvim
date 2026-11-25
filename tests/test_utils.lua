@@ -16,6 +16,8 @@ vim
 		{ "handles accented characters 2", "Tést Title", "test-title" },
 		{ "handles umlauts 1", "Müller", "muller" },
 		{ "handles umlauts 2", "Straße", "strasse" },
+		{ "handles uppercase accents", "Água", "agua" },
+		{ "handles uppercase accented latin", "Évora", "evora" },
 	})
 	:each(function(case)
 		T["normalize"][case[1]] = function() eq(utils.normalize(case[2]), case[3]) end
@@ -142,6 +144,35 @@ T["edit"]["opens an existing file without prompting on stale swap"] = function()
 
 	eq(vim.api.nvim_buf_get_name(0), file_path)
 	eq(vim.api.nvim_buf_get_lines(0, 0, 1, false)[1], "# Hello")
+end
+
+T["edit"]["opens paths with percent and hash characters"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+
+	for _, name in ipairs({ "50%done.md", "a#b.md" }) do
+		local file_path = vim.fs.joinpath(temp_dir, name)
+		vim.fn.writefile({ "# " .. name }, file_path)
+		vim.cmd("enew")
+		utils.edit(file_path)
+		eq(vim.api.nvim_buf_get_name(0), file_path)
+	end
+end
+
+T["write_markdown_file"] = new_set()
+
+T["write_markdown_file"]["wx mode never truncates an existing file"] = function()
+	local temp_id = string.format("%d_%d", vim.uv.now(), math.random(1000, 9999))
+	local temp_dir = vim.fs.joinpath("/tmp", "notes.nvim", "test_" .. temp_id)
+	vim.fn.mkdir(temp_dir, "p")
+	local file_path = vim.fs.joinpath(temp_dir, "note.md")
+	vim.fn.writefile({ "# Original" }, file_path)
+
+	local written = utils.write_markdown_file(file_path, { "# Replacement" }, "note", "wx")
+
+	eq(written, nil)
+	eq(vim.fn.readfile(file_path), { "# Original" })
 end
 
 T["edit"]["switches to already-loaded buffer and reloads from disk"] = function()

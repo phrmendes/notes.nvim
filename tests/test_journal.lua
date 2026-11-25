@@ -111,8 +111,7 @@ T["journal"]["supports brazilian portuguese locale"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 
 	child.lua([[
-		local ok = pcall(os.setlocale, "pt_BR.UTF-8")
-		_G.locale_pt = ok
+		_G.locale_pt = os.setlocale("pt_BR.UTF-8") ~= nil
 	]])
 
 	if not child.lua_get("_G.locale_pt") then return end

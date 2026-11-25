@@ -45,7 +45,11 @@ mini.grep = function(dir, glob, on_choice)
 			name = "Search in notes",
 			cwd = dir,
 			choose = function(item)
-				vim.api.nvim_win_call(win, function() on_choice(item) end)
+				-- grep_live items are "path\0lnum\0col\0text" and the path is
+				-- relative to `cwd`, so rebuild an absolute "path:lnum:" choice.
+				local path, lnum = item:match("^(.-)%z(%d+)%z")
+				local choice = path and (vim.fs.joinpath(dir, path) .. ":" .. lnum .. ":") or item
+				vim.api.nvim_win_call(win, function() on_choice(choice) end)
 			end,
 			show = function(buf_id, items_list, query) pick.default_show(buf_id, items_list, query, { show_icons = true }) end,
 		},

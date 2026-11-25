@@ -10,7 +10,8 @@ local utils = {}
 ---@param input string The input to normalize.
 ---@return string normalized_string The normalized input.
 utils.normalize = function(input)
-	local normalized_input = input:lower()
+	-- `vim.fn.tolower` folds Unicode, so "Água" becomes "água" before the map.
+	local normalized_input = vim.fn.tolower(input)
 
 	local replacements = {
 		["á"] = "a",
@@ -108,13 +109,15 @@ end
 ---@param full_path string
 ---@param lines string[] Content lines
 ---@param label string Human-readable label for error messages
+---@param mode? string File open mode (default "w")
 ---@return string | nil full_path or nil on failure
-utils.write_markdown_file = function(full_path, lines, label)
+utils.write_markdown_file = function(full_path, lines, label, mode)
 	local content = table.concat(lines, "\n") .. "\n"
-	local fd = vim.uv.fs_open(full_path, "w", 420)
+	local fd = vim.uv.fs_open(full_path, mode or "w", 420)
 
 	if not fd then
-		vim.notify("Failed to create " .. label .. ": could not open file", vim.log.levels.ERROR)
+		-- An existing file is the expected collision result for "wx".
+		if mode ~= "wx" then vim.notify("Failed to create " .. label .. ": could not open file", vim.log.levels.ERROR) end
 		return nil
 	end
 
@@ -172,10 +175,20 @@ utils.edit = function(path, lnum)
 		return
 	end
 
-	local cmd = "silent! edit!"
-	if lnum then cmd = cmd .. " +" .. lnum end
-	cmd = cmd .. " " .. path
-	pcall(function() vim.cmd(cmd) end)
+	-- `nvim_cmd` takes the path literally, so `%`, `#`, and wildcards stay safe.
+	local ok, err = pcall(vim.api.nvim_cmd, {
+		cmd = "edit",
+		args = { path },
+		mods = { silent = true },
+		magic = { file = false, bar = false },
+	}, {})
+
+	if not ok then
+		vim.notify("Failed to open " .. path .. ": " .. tostring(err), vim.log.levels.ERROR)
+		return
+	end
+
+	if lnum then pcall(vim.api.nvim_win_set_cursor, 0, { lnum, 0 }) end
 end
 
 ---@param item any

@@ -10,8 +10,8 @@ local utils = {}
 ---@param dir string
 ---@return string[] Sorted absolute paths
 utils.list_md_files = function(dir)
-	local files = vim.fs.dir(dir, { depth = nil })
-	local items = vim.iter(files):filter(function(file) return vim.endswith(file, ".md") end):map(function(file, _) return file end):totable()
+	local files = vim.fs.dir(dir, { depth = math.huge })
+	local items = vim.iter(files):filter(function(file, kind) return kind == "file" and vim.endswith(file, ".md") end):map(function(file, _) return file end):totable()
 	table.sort(items)
 	return items
 end
@@ -24,7 +24,8 @@ end
 utils.rg = function(dir, glob, pattern)
 	if not pattern or pattern == "" then return nil end
 
-	local obj = vim.system({ "rg", "-n", "--no-heading", "-F", "--color=never", "--glob", glob, pattern, dir }, { text = true }):wait()
+	-- `--` keeps patterns that start with "-" from being read as flags.
+	local obj = vim.system({ "rg", "-n", "--no-heading", "-F", "--color=never", "--glob", glob, "--", pattern, dir }, { text = true }):wait()
 
 	if obj.code == 1 then
 		vim.notify("No matches found", vim.log.levels.INFO)
@@ -58,15 +59,16 @@ utils.on_choice = function(choice)
 
 	choice = coerce_to_string(choice)
 
-	local parts = vim.split(choice, ":")
-	local lnum = tonumber(parts[2] or "")
+	local path, lnum_text = choice:match("^(.-):(%d+):")
+	local lnum = tonumber(lnum_text or "")
 
-	if not lnum then
+	if not path or not lnum then
 		edit(choice)
 		return
 	end
+	if lnum < 1 then return end
 
-	edit(parts[1], lnum)
+	edit(path, lnum)
 end
 
 return utils

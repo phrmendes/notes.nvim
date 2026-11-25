@@ -27,6 +27,24 @@ T["native files"]["lists .md files only"] = function()
 	eq(items[2]:match(p.md_end) ~= nil, true)
 end
 
+T["native files"]["lists notes in subdirectories"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	utils.create_note_files(child, temp_dir, {
+		["top.md"] = "top",
+		["journal/day.md"] = "day",
+	})
+
+	utils.mock.select(child)
+	utils.setup(child, temp_dir, "native")
+	child.lua(string.format([[require("notes.picker").files(%q)]], temp_dir))
+
+	local items = utils.mock.select_items(child)
+	eq(#items, 2)
+	local names = vim.iter(items):map(function(i) return vim.fs.basename(i) end):totable()
+	eq(vim.list_contains(names, "day.md"), true)
+end
+
 T["native files"]["empty dir shows empty list"] = function()
 	local temp_dir = utils.create_temp_dir(child)
 
@@ -69,6 +87,21 @@ T["native grep"]["shows no matches for absent pattern"] = function()
 
 	local notified = utils.mock.notify_message(child)
 	eq(notified, "No matches found")
+end
+
+T["native grep"]["handles a pattern that starts with a dash"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+
+	child.lua(string.format([[vim.fn.writefile({ "-foo bar" }, %q .. "/dash.md")]], temp_dir))
+
+	utils.mock.input(child, "-foo")
+	utils.mock.select(child)
+
+	utils.setup(child, temp_dir, "native")
+	child.lua(string.format([[require("notes.picker").grep(%q)]], temp_dir))
+
+	local items = utils.mock.select_items(child)
+	eq(#items > 0, true)
 end
 
 T["native grep"]["handles regex special characters literally"] = function()
@@ -115,15 +148,18 @@ local capture_on_choice = function(input)
 	else
 		child.lua([[require("notes.picker.utils").on_choice(nil)]])
 	end
-	return utils.mock.cmds(child)
+	return child.lua([[
+		return vim.iter(_G.mocked_cmds):map(function(c) return { c.cmd, c.args and c.args[1] } end):totable()
+	]])
 end
 
 vim
 	.iter({
 		{ name = "returns early on nil", input = nil, expected = {} },
-		{ name = "opens file at line when format is file:lnum:", input = "foo.md:42:matched text", expected = { "silent! edit! +42 foo.md" } },
-		{ name = "opens file when format is bare path", input = "just/a/path.md", expected = { "silent! edit! just/a/path.md" } },
-		{ name = "path with non-numeric lnum falls back to bare path", input = "foo.md:notanumber:", expected = { "silent! edit! foo.md:notanumber:" } },
+		{ name = "opens file at line when format is file:lnum:", input = "foo.md:42:matched text", expected = { { "edit", "foo.md" } } },
+		{ name = "opens file when format is bare path", input = "just/a/path.md", expected = { { "edit", "just/a/path.md" } } },
+		{ name = "path with non-numeric lnum falls back to bare path", input = "foo.md:notanumber:", expected = { { "edit", "foo.md:notanumber:" } } },
+		{ name = "rejects line 0", input = "foo.md:0:text", expected = {} },
 	})
 	:each(function(case)
 		T["on_choice"][case.name] = function()
@@ -161,6 +197,23 @@ T["mini backend"]["grep calls mini_pick.builtin.grep_live"] = function()
 
 	eq(child.lua_get("_G.captured_globs[1]"), "*.md")
 	eq(child.lua_get("_G.captured_cwd"), temp_dir)
+end
+
+T["mini backend"]["grep turns NUL items into path:line: choices"] = function()
+	local temp_dir = utils.create_temp_dir(child)
+	child.lua(string.format([[vim.fn.writefile({ "hello" }, %q .. "/nested.md")]], temp_dir))
+
+	utils.mock_mini_pick(child)
+	utils.setup(child, temp_dir, "mini")
+	utils.mock.cmd(child)
+
+	child.lua(string.format([[require("notes.picker").grep(%q)]], temp_dir))
+
+	local item = "nested.md\0" .. "1\0" .. "1\0" .. "hello"
+	child.lua(string.format([[_G.captured_choose(%q)]], item))
+	local cmd = child.lua_get("_G.mocked_cmds[1]")
+	local expected = vim.fs.joinpath(temp_dir, "nested.md")
+	eq(cmd.args[1], expected)
 end
 
 return T

@@ -12,6 +12,44 @@ With [vim.pack](https://neovim.io/doc/user/usr_05.html#vim.pack) (Neovim 0.12+):
 vim.pack.add({ "https://github.com/phrmendes/notes.nvim" })
 ```
 
+## Pin a release
+
+After the first release, pin a tag with vim.pack (Neovim 0.12+):
+
+```lua
+vim.pack.add({ { src = "https://github.com/phrmendes/notes.nvim", version = "v1.0.0" } })
+```
+
+For Nix, pin the same tag and add the plugin package:
+
+```nix
+inputs.notes.url = "github:phrmendes/notes.nvim/v1.0.0";
+# Add inputs.notes.packages.${pkgs.system}.notes-nvim to your Neovim plugins.
+```
+
+Create the first tag and GitHub release manually. The release workflow waits for a tag.
+
+## Development and releases
+
+Enter the devenv environment and use Commitizen to create Conventional Commits.
+
+```sh
+devenv shell -- cz commit
+devenv test
+```
+
+The git hooks check commit messages and format code. The docs hook generates the help file.
+For the first release, generate the changelog and review it:
+
+```sh
+devenv shell -- cz changelog --unreleased-version v1.0.0
+```
+
+Commit the changelog, then create and publish the `v1.0.0` tag manually.
+After the first release, Commitizen updates the version and changelog when checks pass on main.
+The workflow creates a tag and a GitHub release. Non-bot commits must have verified signatures.
+The repository must allow the workflow token to create release commits and tags on main.
+
 ## Quick start
 
 ```lua
@@ -39,7 +77,9 @@ vim.keymap.set("n", "<leader>nj", function() require("notes").journal() end, { d
 ## Preconfigured LSP servers
 
 The plugin ships `lsp/marksman.lua` and `lsp/ltex_plus.lua` at the project root.
-Neovim 0.11+ auto-discovers them; `setup()` enables both automatically.
+Neovim 0.11+ auto-discovers them. `setup()` enables marksman. For ltex-ls-plus it
+registers the settings and the helper server only. Start LTeX with the
+"Enable spellcheck" code action or `vim.lsp.enable("ltex_plus")`.
 Disable individually with `lsp = { marksman = { enabled = false }, ltex_plus = { enabled = false } }`
 (or `lsp = false` to disable all).
 
@@ -93,15 +133,6 @@ require("notes").set_picker("mini")  -- switch picker at runtime
 
 - [denote](https://github.com/protesilaos/denote) — the Emacs package that inspired this plugin
 - [ltex_extra.nvim](https://github.com/barreiroleo/ltex_extra.nvim) — richer ltex-ls-plus features (UI, statusline, scope management) on top of the basic integration shipped here
-
-## Development
-
-This project uses [devenv](https://devenv.sh). Inside a devenv shell:
-
-```bash
-test     # run the test suite
-doc      # regenerate doc/notes.txt
-```
 
 ## License
 

@@ -491,6 +491,51 @@ T["notes lsp code actions"] = new_set()
 
 local function load_notes_lsp() return require("notes.lsp") end
 
+T["notes lsp spellcheck toggle"] = new_set()
+
+T["notes lsp spellcheck toggle"]["detaches only the current buffer"] = function()
+	local notes_lsp = load_notes_lsp()
+	local detached = {}
+	local get_clients, detach = vim.lsp.get_clients, vim.lsp.buf_detach_client
+	local current_buf = vim.api.nvim_get_current_buf
+
+	patch(vim.lsp, "get_clients", function() return { { id = 7 } } end)
+	patch(vim.lsp, "buf_detach_client", function(bufnr, id) table.insert(detached, { bufnr, id }) end)
+
+	patch(vim.api, "nvim_get_current_buf", function() return 42 end)
+	local called = false
+	notes_lsp.handlers[vim.lsp.protocol.Methods.workspace_executeCommand]({ command = "notes.toggle_spellcheck" }, function() called = true end)
+	patch(vim.api, "nvim_get_current_buf", current_buf)
+
+	patch(vim.lsp, "buf_detach_client", detach)
+	patch(vim.lsp, "get_clients", get_clients)
+
+	eq(called, true)
+	eq(detached, { { 42, 7 } })
+end
+
+T["notes lsp spellcheck toggle"]["starts ltex for the current buffer"] = function()
+	local notes_lsp = load_notes_lsp()
+	local started = {}
+	local get_clients, start = vim.lsp.get_clients, vim.lsp.start
+	local config = vim.lsp.config.ltex_plus
+	local current_buf = vim.api.nvim_get_current_buf
+
+	patch(vim.lsp, "get_clients", function() return {} end)
+	patch(vim.lsp.config, "ltex_plus", { cmd = { "ltex-ls-plus" } })
+	patch(vim.lsp, "start", function(_, opts) table.insert(started, opts.bufnr) end)
+	patch(vim.api, "nvim_get_current_buf", function() return 9 end)
+
+	notes_lsp.handlers[vim.lsp.protocol.Methods.workspace_executeCommand]({ command = "notes.toggle_spellcheck" }, function() end)
+
+	patch(vim.api, "nvim_get_current_buf", current_buf)
+	patch(vim.lsp, "start", start)
+	patch(vim.lsp.config, "ltex_plus", config)
+	patch(vim.lsp, "get_clients", get_clients)
+
+	eq(started, { 9 })
+end
+
 T["notes lsp code actions"]["returns Pick language when ltex is attached"] = function()
 	local orig_get_clients = vim.lsp.get_clients
 	patch(vim.lsp, "get_clients", function(_) return { { name = "ltex_plus" } } end)

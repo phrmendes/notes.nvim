@@ -15,9 +15,7 @@ native.grep = function(dir, glob, on_choice)
 	vim.ui.input({ prompt = "Grep pattern: " }, function(pattern)
 		local items = rg(dir, glob, pattern)
 
-		if items then
-			vim.ui.select(items, { prompt = "Grep results" }, on_choice)
-		end
+		if items then vim.ui.select(items, { prompt = "Grep results" }, on_choice) end
 	end)
 end
 
