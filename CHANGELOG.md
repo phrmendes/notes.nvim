@@ -1,7 +1,6 @@
-# Changelog
-
 ## v1.0.0 (2026-11-25)
 ### Features
+- prepare v1.0.0 release ([85d125e](https://github.com/phrmendes/notes.nvim/commit/85d125e6347590557fdcdcac5648a243e4fd7f69))
 - auto-recheck ltex after re-enable via LspAttach autocmd ([0de6acd](https://github.com/phrmendes/notes.nvim/commit/0de6acdcd353c224c1347b0e2a0a125403a3a910))
 - inject Toggle spellcheck code action; unwrap README prose ([21263a8](https://github.com/phrmendes/notes.nvim/commit/21263a8ef18dc12302c568238ca7ef6c65a2f78e))
 - implement :checkhealth notes with config, binary, and persist checks ([0186849](https://github.com/phrmendes/notes.nvim/commit/0186849ffb235dbd1cf9aa10a7f8e979cb1d1414))
